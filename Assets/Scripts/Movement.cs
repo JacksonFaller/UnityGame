@@ -9,6 +9,9 @@ using DG.Tweening;
 [RequireComponent(typeof(Rigidbody2D))]
 public class Movement : MonoBehaviour
 {
+    private const string WallGrabButton = "Fire3";
+    private const string DashButton = "Fire1";
+
     private Rigidbody2D _rigidbody;
     private Collision _collision;
     private AnimationScript _animation;
@@ -17,8 +20,8 @@ public class Movement : MonoBehaviour
     private bool _isGrounded;
     private bool _hasDashed;
     private int _side = 1;
-    private const string WallGrabButton = "Fire3";
-    private const string DashButton = "Fire1";
+    private bool _isLedgeBouncing;
+    
 
     public bool CanMove { get; private set; } = true;
     public bool IsWallGrabbing { get; private set; }
@@ -88,6 +91,18 @@ public class Movement : MonoBehaviour
         {
             _side = x > 0 ? 1 : -1;
             _animation.Flip(_side);
+        }
+    }
+
+    private void OnTriggerEnter2D(Collider2D collision)
+    {
+        if(collision.gameObject.layer == LayerMask.NameToLayer("JumpTriggers"))
+        {
+            if(_rigidbody.velocity.y > 0 && _rigidbody.velocity.x != 0)
+            {
+                _rigidbody.velocity += new Vector2(0, 20f);
+                StartCoroutine(EnableLedgeBounce(0.3f));
+            }
         }
     }
 
@@ -166,14 +181,8 @@ public class Movement : MonoBehaviour
         if (!CanMove)
             return;
 
-        bool pushingWall = false;
-        if ((_rigidbody.velocity.x > 0 && _collision.OnRightWall) || (_rigidbody.velocity.x < 0 && _collision.OnLeftWall))
-        {
-            pushingWall = true;
-        }
-        float push = pushingWall ? 0 : _rigidbody.velocity.x;
-
-        _rigidbody.velocity = new Vector2(push, -SlideSpeed);
+        float slideSpeed = _rigidbody.velocity.y > 0 ? _rigidbody.velocity.y : -SlideSpeed;
+        _rigidbody.velocity = new Vector2(0, slideSpeed);
     }
 
     #endregion
@@ -200,12 +209,23 @@ public class Movement : MonoBehaviour
         particle.Play();
     }
 
+    #region Corroutines
+
+    private IEnumerator EnableLedgeBounce(float time)
+    {
+        _isLedgeBouncing = true;
+        yield return new WaitForSeconds(time);
+        _isLedgeBouncing = false;
+    }
+
     private IEnumerator DisableMovement(float time)
     {
         CanMove = false;
         yield return new WaitForSeconds(time);
         CanMove = true;
     }
+
+    #endregion
 
     void WallParticle(float vertical)
     {
@@ -298,7 +318,7 @@ public class Movement : MonoBehaviour
 
     private void DoWallSlide(float x)
     {
-        if (_collision.OnWall && !_collision.OnGround)
+        if (_collision.OnWall && !_collision.OnGround && !_isLedgeBouncing)
         {
             if (((_collision.OnRightWall && x > 0) || (_collision.OnLeftWall && x < 0)) && !IsWallGrabbing)
             {
