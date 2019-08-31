@@ -23,9 +23,9 @@ public class AnimationScript : MonoBehaviour
 
     void Update()
     {
-        _animator.SetBool("onGround", _collision.onGround);
-        _animator.SetBool("onWall", _collision.onWall);
-        _animator.SetBool("onRightWall", _collision.onRightWall);
+        _animator.SetBool("onGround", _collision.OnGround);
+        _animator.SetBool("onWall", _collision.OnWall);
+        _animator.SetBool("onRightWall", _collision.OnRightWall);
         _animator.SetBool("wallGrab", _movement.IsWallGrabbing);
         _animator.SetBool("wallSlide", _movement.IsWallSliding);
         _animator.SetBool("canMove", _movement.CanMove);

@@ -9,14 +9,22 @@ using DG.Tweening;
 [RequireComponent(typeof(Rigidbody2D))]
 public class Movement : MonoBehaviour
 {
-    [HideInInspector]
-    public Rigidbody2D Rigidbody;
+    private Rigidbody2D _rigidbody;
     private Collision _collision;
     private AnimationScript _animation;
     private BetterJumping _betterJumping;
 
     private bool _isGrounded;
     private bool _hasDashed;
+    private int _side = 1;
+    private const string WallGrabButton = "Fire3";
+    private const string DashButton = "Fire1";
+
+    public bool CanMove { get; private set; } = true;
+    public bool IsWallGrabbing { get; private set; }
+    public bool IsWallJumped { get; private set; }
+    public bool IsWallSliding { get; private set; }
+    public bool IsDashing { get; private set; }
 
     [Space]
     [Header("Stats")]
@@ -25,17 +33,8 @@ public class Movement : MonoBehaviour
     public float SlideSpeed = 5;
     public float WallJumpLerp = 10;
     public float DashSpeed = 20;
-
-    [Space]
-    [Header("Booleans")]
-    public bool CanMove;
-    public bool IsWallGrabbing;
-    public bool IsWallJumped;
-    public bool IsWallSliding;
-    public bool IsDashing;
-
-    [Space]
-    public int Side = 1;
+    public float WallJumpPowerMultiplier = 0.6f;
+    public float WallClimbSpeedMultiplier = 0.5f;
 
     [Space]
     [Header("Particles")]
@@ -45,6 +44,7 @@ public class Movement : MonoBehaviour
     public ParticleSystem SlideParticle;
 
     [Space]
+    [Header("References")]
     public GhostTrail GhostTrail;
     public RippleEffect RippleEffect;
 
@@ -52,7 +52,7 @@ public class Movement : MonoBehaviour
     void Start()
     {
         _collision = GetComponent<Collision>();
-        Rigidbody = GetComponent<Rigidbody2D>();
+        _rigidbody = GetComponent<Rigidbody2D>();
         _animation = GetComponentInChildren<AnimationScript>();
         _betterJumping = GetComponent<BetterJumping>();
 
@@ -65,120 +65,33 @@ public class Movement : MonoBehaviour
     {
         float x = Input.GetAxis("Horizontal");
         float y = Input.GetAxis("Vertical");
-        float xRaw = Input.GetAxisRaw("Horizontal");
-        float yRaw = Input.GetAxisRaw("Vertical");
-        Vector2 dir = new Vector2(x, y);
+        Vector2 direction = new Vector2(x, y);
 
-        Walk(dir);
-        _animation.SetHorizontalMovement(x, y, Rigidbody.velocity.y);
+        Walk(direction);
+        _animation.SetHorizontalMovement(x, y, _rigidbody.velocity.y);
+        DoGrabWall();
 
-        if (_collision.onWall && Input.GetButton("Fire3") && CanMove)
-        {
-            if (Side != _collision.wallSide)
-            {
-                Side *= -1;
-                _animation.Flip(Side);
-            }
+        if (Input.GetButtonUp(WallGrabButton) || !_collision.OnWall || !CanMove)
+            IsWallGrabbing = IsWallSliding = false;
 
-            IsWallGrabbing = true;
-            IsWallSliding = false;
-        }
-
-        if (Input.GetButtonUp("Fire3") || !_collision.onWall || !CanMove)
-        {
-            IsWallGrabbing = false;
-            IsWallSliding = false;
-        }
-
-        if (_collision.onGround && !IsDashing)
-        {
+        if (_collision.OnGround && !IsDashing)
             IsWallJumped = false;
-            GetComponent<BetterJumping>().enabled = true;
-        }
 
-        /// forsenWhat ???? 
-        if (IsWallGrabbing && !IsDashing)
-        {
-            Rigidbody.gravityScale = 0;
-            if (x > .2f || x < -.2f)
-                Rigidbody.velocity = new Vector2(Rigidbody.velocity.x, 0);
-
-            float speedModifier = y > 0 ? .5f : 1;
-
-            Rigidbody.velocity = new Vector2(Rigidbody.velocity.x, y * (Speed * speedModifier));
-        }
-        else
-        {
-            Rigidbody.gravityScale = 3;
-        }
-
-        if (_collision.onWall && !_collision.onGround)
-        {
-            if (((_collision.onRightWall && x > 0) || (_collision.onLeftWall && x < 0)) && !IsWallGrabbing)
-            {
-                IsWallSliding = true;
-                WallSlide();
-            }
-        }
-
-        if (!_collision.onWall || _collision.onGround)
-            IsWallSliding = false;
-
-        if (Input.GetButtonDown("Jump"))
-        {
-            _animation.SetTrigger("jump");
-
-            if (_collision.onGround)
-                Jump(Vector2.up, false);
-            if (_collision.onWall && !_collision.onGround)
-                WallJump();
-        }
-
-        if (Input.GetButtonDown("Fire1") && !_hasDashed)
-        {
-            if (xRaw != 0 || yRaw != 0)
-                Dash(xRaw, yRaw);
-            else
-                Dash(Side, 0);
-        }
-
-        if (_collision.onGround && !_isGrounded)
-        {
-            GroundTouch();
-            _isGrounded = true;
-        }
-
-        if (!_collision.onGround && _isGrounded)
-        {
-            _isGrounded = false;
-        }
-
+        UpdateGravityScale(y);
+        DoWallSlide(x);
+        DoJump();
+        DoDash();
+        UpdateIsGrounded();
         WallParticle(y);
 
-        if (IsWallGrabbing || IsWallSliding || !CanMove)
-            return;
-
-        if (x > 0)
+        if (!IsWallGrabbing && !IsWallSliding && CanMove && x != 0)
         {
-            Side = 1;
-            _animation.Flip(Side);
-        }
-        if (x < 0)
-        {
-            Side = -1;
-            _animation.Flip(Side);
+            _side = x > 0 ? 1 : -1;
+            _animation.Flip(_side);
         }
     }
 
-    void GroundTouch()
-    {
-        _hasDashed = false;
-        IsDashing = false;
-
-        Side = _animation.SpriteRenderer.flipX ? -1 : 1;
-
-        JumpParticle.Play();
-    }
+    #region Dash
 
     private void Dash(float x, float y)
     {
@@ -187,89 +100,93 @@ public class Movement : MonoBehaviour
         RippleEffect.Emit(Camera.main.WorldToViewportPoint(transform.position));
 
         _hasDashed = true;
-
         _animation.SetTrigger("dash");
 
-        Rigidbody.velocity = Vector2.zero;
         Vector2 dir = new Vector2(x, y);
-
-        Rigidbody.velocity += dir.normalized * DashSpeed;
+        _rigidbody.velocity = dir.normalized * DashSpeed;
         StartCoroutine(DashWait());
     }
 
-    IEnumerator DashWait()
+    private IEnumerator DashWait()
     {
         GhostTrail.ShowGhost();
         StartCoroutine(GroundDash());
-        DOVirtual.Float(14, 0, .8f, (float x) => Rigidbody.drag = x);
+        DOVirtual.Float(14, 0, .8f, (float x) => _rigidbody.drag = x);
 
         DashParticle.Play();
-        Rigidbody.gravityScale = 0;
-        _betterJumping.enabled = false;
-        IsWallJumped = true;
-        IsDashing = true;
+        UpdateDashState(0, false);
 
         yield return new WaitForSeconds(.3f);
 
         DashParticle.Stop();
-        Rigidbody.gravityScale = 3;
-        _betterJumping.enabled = true;
-        IsWallJumped = false;
-        IsDashing = false;
+        UpdateDashState(3, true);
     }
 
-    IEnumerator GroundDash()
+    private void UpdateDashState(float gravityScale, bool jumpingEnabled)
+    {
+        _rigidbody.gravityScale = gravityScale;
+        _betterJumping.enabled = jumpingEnabled;
+        IsWallJumped = !jumpingEnabled;
+        IsDashing = !jumpingEnabled;
+    }
+
+    private IEnumerator GroundDash()
     {
         yield return new WaitForSeconds(.15f);
-        if (_collision.onGround)
+        if (_collision.OnGround)
             _hasDashed = false;
     }
 
+    #endregion
+
+    #region Wall
+
     private void WallJump()
     {
-        if ((Side == 1 && _collision.onRightWall) || Side == -1 && _collision.onLeftWall)
+        if ((_side == 1 && _collision.OnRightWall) || (_side == -1 && _collision.OnLeftWall))
         {
-            Side *= -1;
-            _animation.Flip(Side);
+            _side *= -1;
+            _animation.Flip(_side);
         }
 
         StopCoroutine(DisableMovement(0));
         StartCoroutine(DisableMovement(.1f));
 
-        Vector2 wallDir = _collision.onRightWall ? Vector2.left : Vector2.right;
-
-        Jump((Vector2.up / 1.5f + wallDir / 1.5f), true);
-
+        Vector2 wallDir = _collision.OnRightWall ? Vector2.left : Vector2.right;
+        Vector2 jumpDirection = Vector2.up * WallJumpPowerMultiplier + wallDir * WallJumpPowerMultiplier;
+        Jump(jumpDirection, true);
         IsWallJumped = true;
     }
 
     private void WallSlide()
     {
-        if (_collision.wallSide != Side)
-            _animation.Flip(Side * -1);
+        if (_collision.WallSide != _side)
+            _animation.Flip(_side * -1);
 
         if (!CanMove)
             return;
 
         bool pushingWall = false;
-        if ((Rigidbody.velocity.x > 0 && _collision.onRightWall) || (Rigidbody.velocity.x < 0 && _collision.onLeftWall))
+        if ((_rigidbody.velocity.x > 0 && _collision.OnRightWall) || (_rigidbody.velocity.x < 0 && _collision.OnLeftWall))
         {
             pushingWall = true;
         }
-        float push = pushingWall ? 0 : Rigidbody.velocity.x;
+        float push = pushingWall ? 0 : _rigidbody.velocity.x;
 
-        Rigidbody.velocity = new Vector2(push, -SlideSpeed);
+        _rigidbody.velocity = new Vector2(push, -SlideSpeed);
     }
+
+    #endregion
 
     private void Walk(Vector2 dir)
     {
         if (!CanMove || IsWallGrabbing) return;
 
         if (IsWallJumped)
-            Rigidbody.velocity = Vector2.Lerp(Rigidbody.velocity, 
-                new Vector2(dir.x * Speed, Rigidbody.velocity.y), WallJumpLerp * Time.deltaTime);
+            _rigidbody.velocity = Vector2.Lerp(_rigidbody.velocity, 
+                new Vector2(dir.x * Speed, _rigidbody.velocity.y), WallJumpLerp * Time.deltaTime);
         else
-            Rigidbody.velocity = new Vector2(dir.x * Speed, Rigidbody.velocity.y);
+            _rigidbody.velocity = new Vector2(dir.x * Speed, _rigidbody.velocity.y);
     }
 
     private void Jump(Vector2 dir, bool wall)
@@ -277,13 +194,13 @@ public class Movement : MonoBehaviour
         SlideParticle.transform.parent.localScale = new Vector3(GetParticleSide(), 1, 1);
         ParticleSystem particle = wall ? WallJumpParticle : JumpParticle;
 
-        Rigidbody.velocity = new Vector2(Rigidbody.velocity.x, 0);
-        Rigidbody.velocity += dir * JumpForce;
+        _rigidbody.velocity = new Vector2(_rigidbody.velocity.x, 0);
+        _rigidbody.velocity += dir * JumpForce;
 
         particle.Play();
     }
 
-    IEnumerator DisableMovement(float time)
+    private IEnumerator DisableMovement(float time)
     {
         CanMove = false;
         yield return new WaitForSeconds(time);
@@ -305,5 +222,93 @@ public class Movement : MonoBehaviour
         }
     }
 
-    int GetParticleSide() => _collision.wallSide * -1;
+    private int GetParticleSide() => _collision.WallSide * -1;
+
+    private void UpdateIsGrounded()
+    {
+        if (_collision.OnGround)
+        {
+            if (_isGrounded) return;
+            JumpParticle.Play();
+            _side = _animation.SpriteRenderer.flipX ? -1 : 1;
+            _hasDashed = false;
+            IsDashing = false;
+            _isGrounded = true;
+        }
+        else if (_isGrounded)
+        {
+            _isGrounded = false;
+        }
+    }
+
+    private void DoJump()
+    {
+        if (Input.GetButtonDown("Jump"))
+        {
+            _animation.SetTrigger("jump");
+
+            if (_collision.OnGround)
+                Jump(Vector2.up, false);
+            else if (_collision.OnWall)
+                WallJump();
+        }
+    }
+
+    private void DoDash()
+    {
+        if (Input.GetButtonDown(DashButton) && !_hasDashed)
+        {
+            float xRaw = Input.GetAxisRaw("Horizontal");
+            float yRaw = Input.GetAxisRaw("Vertical");
+            if (xRaw != 0 || yRaw != 0)
+                Dash(xRaw, yRaw);
+            else
+                Dash(_side, 0);
+        }
+    }
+
+    private void DoGrabWall()
+    {
+        if (_collision.OnWall && Input.GetButton(WallGrabButton) && CanMove)
+        {
+            if (_side != _collision.WallSide)
+            {
+                _side *= -1;
+                _animation.Flip(_side);
+            }
+            IsWallGrabbing = true;
+            IsWallSliding = false;
+        }
+    }
+
+    private void UpdateGravityScale(float y)
+    {
+
+        if (IsWallGrabbing && !IsDashing)
+        {
+            _rigidbody.gravityScale = 0;
+            float speedModifier = y > 0 ? WallClimbSpeedMultiplier : 1;
+            _rigidbody.velocity = new Vector2(_rigidbody.velocity.x, y * (Speed * speedModifier));
+        }
+        else
+        {
+            _rigidbody.gravityScale = 3;
+        }
+    }
+
+    private void DoWallSlide(float x)
+    {
+        if (_collision.OnWall && !_collision.OnGround)
+        {
+            if (((_collision.OnRightWall && x > 0) || (_collision.OnLeftWall && x < 0)) && !IsWallGrabbing)
+            {
+                IsWallSliding = true;
+                WallSlide();
+            }
+        }
+        else
+        {
+            IsWallSliding = false;
+        }
+    }
 }
