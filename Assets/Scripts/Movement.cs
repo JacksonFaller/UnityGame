@@ -68,9 +68,8 @@ public class Movement : MonoBehaviour
     {
         float x = Input.GetAxis("Horizontal");
         float y = Input.GetAxis("Vertical");
-        Vector2 direction = new Vector2(x, y);
 
-        Walk(direction);
+        Walk(x);
         _animation.SetHorizontalMovement(x, y, _rigidbody.velocity.y);
         DoGrabWall();
 
@@ -81,6 +80,7 @@ public class Movement : MonoBehaviour
             IsWallJumped = false;
 
         UpdateGravityScale(y);
+        Fly(x);
         DoWallSlide(x);
         DoJump();
         DoDash();
@@ -111,7 +111,7 @@ public class Movement : MonoBehaviour
     private void Dash(float x, float y)
     {
         Camera.main.transform.DOComplete();
-        Camera.main.transform.DOShakePosition(.2f, .5f, 14, 90, false, true);
+        Camera.main.transform.DOShakePosition(.2f, .25f, 14, 90, false, true);
         RippleEffect.Emit(Camera.main.WorldToViewportPoint(transform.position));
 
         _hasDashed = true;
@@ -126,7 +126,7 @@ public class Movement : MonoBehaviour
     {
         GhostTrail.ShowGhost();
         StartCoroutine(GroundDash());
-        DOVirtual.Float(14, 0, .8f, (float x) => _rigidbody.drag = x);
+        DOVirtual.Float(15, 0, 0.35f, (float x) => _rigidbody.drag = x);
 
         DashParticle.Play();
         UpdateDashState(0, false);
@@ -187,15 +187,15 @@ public class Movement : MonoBehaviour
 
     #endregion
 
-    private void Walk(Vector2 dir)
+    private void Walk(float x)
     {
         if (!CanMove || IsWallGrabbing) return;
 
         if (IsWallJumped)
             _rigidbody.velocity = Vector2.Lerp(_rigidbody.velocity, 
-                new Vector2(dir.x * Speed, _rigidbody.velocity.y), WallJumpLerp * Time.deltaTime);
+                new Vector2(x * Speed, _rigidbody.velocity.y), WallJumpLerp * Time.deltaTime);
         else
-            _rigidbody.velocity = new Vector2(dir.x * Speed, _rigidbody.velocity.y);
+            _rigidbody.velocity = new Vector2(x * Speed, _rigidbody.velocity.y);
     }
 
     private void Jump(Vector2 dir, bool wall)
@@ -207,6 +207,28 @@ public class Movement : MonoBehaviour
         _rigidbody.velocity += dir * JumpForce;
 
         particle.Play();
+    }
+
+    private void Fly(float x)
+    {
+        if(Input.GetButton("Fire2"))
+        {
+            _rigidbody.gravityScale = 0f;
+            float fallSpeed = -0.25f;
+            float flySpeedBase = Speed;
+            float flySpeed;
+
+            if(x == 0)
+                flySpeed = _side == 1 ? flySpeedBase : -flySpeedBase;
+            else
+                flySpeed = x > 0? flySpeedBase : -flySpeedBase;
+
+            _rigidbody.velocity = new Vector2(flySpeed, fallSpeed);
+        }
+        else if (Input.GetButtonUp("Fire2"))
+        {
+            _rigidbody.gravityScale = 3f;
+        }
     }
 
     #region Corroutines
