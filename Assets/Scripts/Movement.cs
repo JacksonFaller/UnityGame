@@ -29,6 +29,8 @@ public class Movement : MonoBehaviour
     public bool IsWallSliding { get; private set; }
     public bool IsDashing { get; private set; }
 
+    #region Inspector values
+
     [Space]
     [Header("Stats")]
     public float Speed = 10;
@@ -50,6 +52,8 @@ public class Movement : MonoBehaviour
     [Header("References")]
     public GhostTrail GhostTrail;
     public RippleEffect RippleEffect;
+
+    #endregion
 
     // Start is called before the first frame update
     void Start()
@@ -164,7 +168,6 @@ public class Movement : MonoBehaviour
             _animation.Flip(_side);
         }
 
-        StopCoroutine(DisableMovement(0));
         StartCoroutine(DisableMovement(.1f));
 
         Vector2 wallDir = _collision.OnRightWall ? Vector2.left : Vector2.right;
@@ -213,15 +216,18 @@ public class Movement : MonoBehaviour
     {
         if(Input.GetButton("Fire2"))
         {
+            if (_collision.OnWall || _isGrounded) return;
+
             _rigidbody.gravityScale = 0f;
             float fallSpeed = -0.25f;
             float flySpeedBase = Speed;
-            float flySpeed;
-
-            if(x == 0)
-                flySpeed = _side == 1 ? flySpeedBase : -flySpeedBase;
-            else
-                flySpeed = x > 0? flySpeedBase : -flySpeedBase;
+            float flySpeed = _side == 1 ? flySpeedBase : -flySpeedBase;
+            if (x != 0 && CanMove)
+            {
+                flySpeed = x > 0 ? flySpeedBase : -flySpeedBase;
+                if ((x < 0 && _side == 1) || (x > 0 && _side == -1))
+                    StartCoroutine(DisableAirMovement(0.4f));
+            }
 
             _rigidbody.velocity = new Vector2(flySpeed, fallSpeed);
         }
@@ -245,6 +251,12 @@ public class Movement : MonoBehaviour
         CanMove = false;
         yield return new WaitForSeconds(time);
         CanMove = true;
+    }
+
+    private IEnumerator DisableAirMovement(float time)
+    {
+        yield return new WaitForEndOfFrame();
+        yield return DisableMovement(time);
     }
 
     #endregion
