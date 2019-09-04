@@ -3,7 +3,8 @@
 --- !u!78 &1
 TagManager:
   serializedVersion: 2
-  tags: []
+  tags:
+  - JumpTrigger
   layers:
   - Default
   - TransparentFX
@@ -15,9 +16,9 @@ TagManager:
   - 
   - Ground
   - PostProcessing
-  - JumpTriggers
-  - Grapple
   - 
+  - Grapple
+  - Player
   - 
   - 
   - 
@@ -38,6 +39,18 @@ TagManager:
   - 
   - 
   m_SortingLayers:
+  - name: Background
+    uniqueID: 318499213
+    locked: 0
   - name: Default
     uniqueID: 0
+    locked: 0
+  - name: Middleground
+    uniqueID: 4173922623
+    locked: 0
+  - name: Player
+    uniqueID: 229362501
+    locked: 0
+  - name: Foreground
+    uniqueID: 3004847913
     locked: 0

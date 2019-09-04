@@ -100,7 +100,7 @@ public class Movement : MonoBehaviour
 
     private void OnTriggerEnter2D(Collider2D collision)
     {
-        if(collision.gameObject.layer == LayerMask.NameToLayer("JumpTriggers"))
+        if(collision.gameObject.CompareTag("JumpTrigger"))
         {
             if(_rigidbody.velocity.y > 0 && _rigidbody.velocity.x != 0)
             {
@@ -112,7 +112,7 @@ public class Movement : MonoBehaviour
 
     #region Dash
 
-    private void Dash(float x, float y)
+    private void Dash(Vector2 direction)
     {
         Camera.main.transform.DOComplete();
         Camera.main.transform.DOShakePosition(.2f, .25f, 14, 90, false, true);
@@ -121,8 +121,7 @@ public class Movement : MonoBehaviour
         _hasDashed = true;
         _animation.SetTrigger("dash");
 
-        Vector2 dir = new Vector2(x, y);
-        _rigidbody.velocity = dir.normalized * DashSpeed;
+        _rigidbody.velocity = direction.normalized * DashSpeed;
         StartCoroutine(DashWait());
     }
 
@@ -312,12 +311,9 @@ public class Movement : MonoBehaviour
     {
         if (Input.GetButtonDown(DashButton) && !_hasDashed)
         {
-            float xRaw = Input.GetAxisRaw("Horizontal");
-            float yRaw = Input.GetAxisRaw("Vertical");
-            if (xRaw != 0 || yRaw != 0)
-                Dash(xRaw, yRaw);
-            else
-                Dash(_side, 0);
+            Vector3 mousePosition = Camera.main.ScreenToWorldPoint(Input.mousePosition);
+            Vector2 direction = mousePosition - transform.position;
+            Dash(direction);
         }
     }
 
