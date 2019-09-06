@@ -5,9 +5,6 @@ using UnityEngine;
 [RequireComponent(typeof(LineRenderer))]
 public class Grapple : MonoBehaviour
 {
-    private const string _grappleButton = "Grapple";
-    private const string _jumpButton = "Jump";
-
     #region Inspector values
 
     [SerializeField]
@@ -26,18 +23,17 @@ public class Grapple : MonoBehaviour
     private LayerMask _grappleObjectsLayer;
 
     [SerializeField]
-    private Rigidbody2D _playerRigidbody2D;
+    private Rigidbody2D _playerRigidbody2D = null;
 
     [SerializeField]
-    private Rigidbody2D _grappleRigidbody2D;
+    private Rigidbody2D _grappleRigidbody2D = null;
 
     [SerializeField]
-    private LayerMask _groundLayerMask;
+    private Collision _playerCollision = null;
 
     #endregion
 
     private DistanceJoint2D _playerDistanceJoint2D;
-    private Collision _playerCollision;
     private Movement _playerMovement;
 
     private LineRenderer _lineRenderer;
@@ -47,13 +43,9 @@ public class Grapple : MonoBehaviour
     private bool _isInUse;
     private float _pushTimer;
 
-    // TODO: Consider using configuration object with layer names and stuff
-    public LayerMask GroundLayer => _groundLayerMask;
-
     void Start()
     {
         _lineRenderer = GetComponent<LineRenderer>();
-        _playerCollision = _playerRigidbody2D.GetComponent<Collision>();
         _playerDistanceJoint2D = _playerRigidbody2D.GetComponent<DistanceJoint2D>();
         _playerMovement = _playerRigidbody2D.GetComponent<Movement>();
     }
@@ -70,7 +62,7 @@ public class Grapple : MonoBehaviour
             }
 
             // Release grapple
-            if (Input.GetButtonDown(_jumpButton))
+            if (Input.GetButtonDown(Configuration.Input.JumpButton))
             {
                 DetachGrapple();
             }
@@ -78,7 +70,7 @@ public class Grapple : MonoBehaviour
             {
                 _pushTimer -= Time.deltaTime;
                 _lineRenderer.SetPosition(1, new Vector3(_playerRigidbody2D.position.x, _playerRigidbody2D.position.y));
-                float x = Input.GetAxis("Horizontal");
+                float x = Input.GetAxis(Configuration.Input.HorizontalAxis);
                 if (Mathf.Abs(x) > 0.1)
                 {
                     // TODO: add restrictions on how much velocity you can gain per swing
@@ -97,7 +89,7 @@ public class Grapple : MonoBehaviour
         else
         {
             // Throw grapple
-            if (Input.GetButtonDown(_grappleButton))
+            if (Input.GetButtonDown(Configuration.Input.GrappleButton))
             {
                 if (!_isInUse)
                 {
@@ -163,9 +155,10 @@ public class Grapple : MonoBehaviour
     public void GrappleHitWall()
     {
         var hitResults = new RaycastHit2D[1];
-        var filter = new ContactFilter2D() { layerMask = _groundLayerMask };
+        var filter = new ContactFilter2D() { layerMask = Configuration.GroundLayer };
         int hitCount = _grappleRigidbody2D.Cast(_playerRigidbody2D.position - _grappleRigidbody2D.position, filter, hitResults);
 
+        // Player is behind a wall and grapple is stuck, so have to disable it
         if(hitCount > 0 && _isReturning)
         {
             DisableGrapple();

@@ -5,7 +5,7 @@ using UnityEngine;
 public class GrappleHook : MonoBehaviour
 {
     [SerializeField]
-    private Grapple _grapple;
+    private Grapple _grapple = null;
 
     private void OnTriggerEnter2D(Collider2D collision)
     {
@@ -14,7 +14,7 @@ public class GrappleHook : MonoBehaviour
 
     private void OnCollisionEnter2D(Collision2D collision)
     {
-        if (_grapple.GroundLayer.ContainsLayer(collision.gameObject.layer))
+        if (Configuration.GroundLayer.ContainsLayer(collision.gameObject.layer))
         {
             _grapple.GrappleHitWall();
         }

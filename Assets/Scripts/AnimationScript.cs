@@ -6,18 +6,17 @@ using UnityEngine;
 [RequireComponent(typeof(SpriteRenderer))]
 public class AnimationScript : MonoBehaviour
 {
-    [HideInInspector]
-    public SpriteRenderer SpriteRenderer;
-
+    private SpriteRenderer _spriteRenderer;
     private Animator _animator;
     private Movement _movement;
-    private Collision _collision;
+
+    [SerializeField]
+    private Collision _collision = null;
 
     void Start()
     {
         _animator = GetComponent<Animator>();
-        SpriteRenderer = GetComponent<SpriteRenderer>();
-        _collision = GetComponentInParent<Collision>();
+        _spriteRenderer = GetComponent<SpriteRenderer>();
         _movement = GetComponentInParent<Movement>();
     }
 
@@ -49,16 +48,13 @@ public class AnimationScript : MonoBehaviour
 
         if (_movement.IsWallGrabbing || _movement.IsWallSliding)
         {
-            if (side == -1 && SpriteRenderer.flipX)
+            if ((side == -1 && _spriteRenderer.flipX) || (side == 1 && !_spriteRenderer.flipX))
                 return;
-
-            if (side == 1 && !SpriteRenderer.flipX)
-            {
-                return;
-            }
         }
 
         bool state = side != 1;
-        SpriteRenderer.flipX = state;
+        _spriteRenderer.flipX = state;
     }
+
+    public int Side => _spriteRenderer.flipX ? -1 : 1;
 }

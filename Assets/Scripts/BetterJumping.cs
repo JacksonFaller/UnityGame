@@ -2,25 +2,31 @@
 using System.Collections.Generic;
 using UnityEngine;
 
+[RequireComponent(typeof(Rigidbody2D))]
 public class BetterJumping : MonoBehaviour
 {
-    private Rigidbody2D rb;
-    public float fallMultiplier = 2.5f;
-    public float lowJumpMultiplier = 2f;
+    private Rigidbody2D _rigidbody2D;
+
+    [SerializeField]
+    private float _fallMultiplier = 3f;
+
+    [SerializeField]
+    private float _lowJumpMultiplier = 8f;
 
     void Start()
     {
-        rb = GetComponent<Rigidbody2D>();
+        _rigidbody2D = GetComponent<Rigidbody2D>();
     }
 
     void Update()
     {
-        if(rb.velocity.y < 0)
+        if(_rigidbody2D.velocity.y < 0)
         {
-            rb.velocity += Vector2.up * Physics2D.gravity.y * (fallMultiplier - 1) * Time.deltaTime;
-        }else if(rb.velocity.y > 0 && !Input.GetButton("Jump"))
+            _rigidbody2D.velocity += Vector2.up * Physics2D.gravity.y * (_fallMultiplier - 1) * Time.deltaTime;
+        }
+        else if(_rigidbody2D.velocity.y > 0 && !Input.GetButton(Configuration.Input.JumpButton))
         {
-            rb.velocity += Vector2.up * Physics2D.gravity.y * (lowJumpMultiplier - 1) * Time.deltaTime;
+            _rigidbody2D.velocity += Vector2.up * Physics2D.gravity.y * (_lowJumpMultiplier - 1) * Time.deltaTime;
         }
     }
 }

@@ -20,8 +20,8 @@ public class RippleEffect : MonoBehaviour
     [Range(0.0f, 2.0f)]
     public float DropInterval = 0.5f;
 
-    [SerializeField, HideInInspector]
-    Shader shader;
+    [SerializeField]
+    private Shader _shader = null;
 
     private Camera _camera;
     private Droplet[] _droplets;
@@ -45,7 +45,7 @@ public class RippleEffect : MonoBehaviour
             _gradTexture.SetPixel(i, 0, new Color(a, a, a, a));
         }
         _gradTexture.Apply();
-        _material = new Material(shader) { hideFlags = HideFlags.DontSave };
+        _material = new Material(_shader) { hideFlags = HideFlags.DontSave };
         _material.SetTexture("_GradTex", _gradTexture);
         UpdateShaderParameters();
     }

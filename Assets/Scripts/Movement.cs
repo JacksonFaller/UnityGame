@@ -5,22 +5,16 @@ using UnityEngine;
 using DG.Tweening;
 
 [RequireComponent(typeof(BetterJumping))]
-[RequireComponent(typeof(Collision))]
 [RequireComponent(typeof(Rigidbody2D))]
 public class Movement : MonoBehaviour
 {
-    private const string WallGrabButton = "Fire3";
-    private const string DashButton = "Fire1";
-
     private Rigidbody2D _rigidbody;
-    private Collision _collision;
-    private AnimationScript _animation;
+    private AnimationScript _animationScript;
     private BetterJumping _betterJumping;
 
     private bool _isGrounded;
     private bool _hasDashed;
     private int _side = 1;
-    private bool _isLedgeBouncing;
     
 
     public bool CanMove { get; private set; } = true;
@@ -53,14 +47,20 @@ public class Movement : MonoBehaviour
     public GhostTrail GhostTrail;
     public RippleEffect RippleEffect;
 
+    [SerializeField]
+    private LedgeBounce _ledgeBounce = null;
+
+    [SerializeField]
+    private Collision _collision = null;
+
+
     #endregion
 
     // Start is called before the first frame update
     void Start()
     {
-        _collision = GetComponent<Collision>();
         _rigidbody = GetComponent<Rigidbody2D>();
-        _animation = GetComponentInChildren<AnimationScript>();
+        _animationScript = GetComponentInChildren<AnimationScript>();
         _betterJumping = GetComponent<BetterJumping>();
 
         if (GhostTrail == null) Debug.LogError("GhostTrail is not referenced!");
@@ -70,14 +70,14 @@ public class Movement : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-        float x = Input.GetAxis("Horizontal");
-        float y = Input.GetAxis("Vertical");
+        float x = Input.GetAxis(Configuration.Input.HorizontalAxis);
+        float y = Input.GetAxis(Configuration.Input.VerticalAxis);
 
         Walk(x);
-        _animation.SetHorizontalMovement(x, y, _rigidbody.velocity.y);
+        _animationScript.SetHorizontalMovement(x, y, _rigidbody.velocity.y);
         DoGrabWall();
 
-        if (Input.GetButtonUp(WallGrabButton) || !_collision.OnWall || !CanMove)
+        if (Input.GetButtonUp(Configuration.Input.WallClimbButton) || !_collision.OnWall || !CanMove)
             IsWallGrabbing = IsWallSliding = false;
 
         if (_collision.OnGround && !IsDashing)
@@ -94,21 +94,11 @@ public class Movement : MonoBehaviour
         if (!IsWallGrabbing && !IsWallSliding && CanMove && x != 0)
         {
             _side = x > 0 ? 1 : -1;
-            _animation.Flip(_side);
+            _animationScript.Flip(_side);
         }
     }
 
-    private void OnTriggerEnter2D(Collider2D collision)
-    {
-        if(collision.gameObject.CompareTag("JumpTrigger"))
-        {
-            if(_rigidbody.velocity.y > 0 && _rigidbody.velocity.x != 0)
-            {
-                _rigidbody.velocity += new Vector2(0, 20f);
-                StartCoroutine(EnableLedgeBounce(0.3f));
-            }
-        }
-    }
+   
 
     #region Dash
 
@@ -119,7 +109,7 @@ public class Movement : MonoBehaviour
         RippleEffect.Emit(Camera.main.WorldToViewportPoint(transform.position));
 
         _hasDashed = true;
-        _animation.SetTrigger("dash");
+        _animationScript.SetTrigger(Configuration.AnimatorParameters.DashTrigger);
 
         _rigidbody.velocity = direction.normalized * DashSpeed;
         StartCoroutine(DashWait());
@@ -164,7 +154,7 @@ public class Movement : MonoBehaviour
         if ((_side == 1 && _collision.OnRightWall) || (_side == -1 && _collision.OnLeftWall))
         {
             _side *= -1;
-            _animation.Flip(_side);
+            _animationScript.Flip(_side);
         }
 
         StartCoroutine(DisableMovement(.1f));
@@ -178,7 +168,7 @@ public class Movement : MonoBehaviour
     private void WallSlide()
     {
         if (_collision.WallSide != _side)
-            _animation.Flip(_side * -1);
+            _animationScript.Flip(_side * -1);
 
         if (!CanMove)
             return;
@@ -213,7 +203,7 @@ public class Movement : MonoBehaviour
 
     private void Fly(float x)
     {
-        if(Input.GetButton("Fire2"))
+        if(Input.GetButton(Configuration.Input.FlyButton))
         {
             if (_collision.OnWall || _isGrounded) return;
 
@@ -230,7 +220,7 @@ public class Movement : MonoBehaviour
 
             _rigidbody.velocity = new Vector2(flySpeed, fallSpeed);
         }
-        else if (Input.GetButtonUp("Fire2"))
+        else if (Input.GetButtonUp(Configuration.Input.FlyButton))
         {
             _rigidbody.gravityScale = 3f;
         }
@@ -238,12 +228,7 @@ public class Movement : MonoBehaviour
 
     #region Corroutines
 
-    private IEnumerator EnableLedgeBounce(float time)
-    {
-        _isLedgeBouncing = true;
-        yield return new WaitForSeconds(time);
-        _isLedgeBouncing = false;
-    }
+    
 
     private IEnumerator DisableMovement(float time)
     {
@@ -283,7 +268,7 @@ public class Movement : MonoBehaviour
         {
             if (_isGrounded) return;
             JumpParticle.Play();
-            _side = _animation.SpriteRenderer.flipX ? -1 : 1;
+            _side = _animationScript.Side;
             _hasDashed = false;
             IsDashing = false;
             _isGrounded = true;
@@ -296,9 +281,9 @@ public class Movement : MonoBehaviour
 
     private void DoJump()
     {
-        if (Input.GetButtonDown("Jump"))
+        if (Input.GetButtonDown(Configuration.Input.JumpButton))
         {
-            _animation.SetTrigger("jump");
+            _animationScript.SetTrigger(Configuration.AnimatorParameters.JumpTrigger);
 
             if (_collision.OnGround)
                 Jump(Vector2.up, false);
@@ -309,7 +294,7 @@ public class Movement : MonoBehaviour
 
     private void DoDash()
     {
-        if (Input.GetButtonDown(DashButton) && !_hasDashed)
+        if (Input.GetButtonDown(Configuration.Input.DashButton) && !_hasDashed)
         {
             Vector3 mousePosition = Camera.main.ScreenToWorldPoint(Input.mousePosition);
             Vector2 direction = mousePosition - transform.position;
@@ -319,12 +304,12 @@ public class Movement : MonoBehaviour
 
     private void DoGrabWall()
     {
-        if (_collision.OnWall && Input.GetButton(WallGrabButton) && CanMove)
+        if (_collision.OnWall && Input.GetButton(Configuration.Input.WallClimbButton) && CanMove)
         {
             if (_side != _collision.WallSide)
             {
                 _side *= -1;
-                _animation.Flip(_side);
+                _animationScript.Flip(_side);
             }
             IsWallGrabbing = true;
             IsWallSliding = false;
@@ -348,7 +333,7 @@ public class Movement : MonoBehaviour
 
     private void DoWallSlide(float x)
     {
-        if (_collision.OnWall && !_collision.OnGround && !_isLedgeBouncing)
+        if (_collision.OnWall && !_collision.OnGround && !_ledgeBounce.IsLedgeBouncing)
         {
             if (((_collision.OnRightWall && x > 0) || (_collision.OnLeftWall && x < 0)) && !IsWallGrabbing)
             {

@@ -5,7 +5,7 @@ using DG.Tweening;
 public class GhostTrail : MonoBehaviour
 {
     public Movement MovementScript;
-    public AnimationScript AnimationScript;
+    public SpriteRenderer PlayerSpriteRenderer;
     public Color TrailColor;
     public Color FadeColor;
     public float GhostInterval;
@@ -16,7 +16,7 @@ public class GhostTrail : MonoBehaviour
     private void Start()
     {
         if (MovementScript == null) Debug.LogError("Movement script is not referenced!");
-        if (AnimationScript == null) Debug.LogError("AnimationScript is not referenced!");
+        if (PlayerSpriteRenderer == null) Debug.LogError("SpriteRenderer is not referenced!");
         _ghostsParent = GetComponent<Transform>();
     }
 
@@ -38,8 +38,8 @@ public class GhostTrail : MonoBehaviour
     private void GhosTrailCallback(Transform currentGhost, SpriteRenderer spriteRenderer)
     {
         currentGhost.position = MovementScript.transform.position;
-        spriteRenderer.flipX = AnimationScript.SpriteRenderer.flipX;
-        spriteRenderer.sprite = AnimationScript.SpriteRenderer.sprite;
+        spriteRenderer.flipX = PlayerSpriteRenderer.flipX;
+        spriteRenderer.sprite = PlayerSpriteRenderer.sprite;
     }
 
     public void FadeSprite(SpriteRenderer spriteRenderer)
