@@ -35,5 +35,6 @@ public static class Configuration
         public const string JumpTrigger = "JumpTrigger";
         public const string SwapField = "SwapField";
         public const string SwapTarget = "SwapTarget";
+        public const string GrapplePoint = "GrapplePoint";
     }
 }

@@ -17,8 +17,7 @@ public class LedgeBounce : MonoBehaviour
 
     private void OnTriggerEnter2D(Collider2D collision)
     {
-        Debug.Log(collision.gameObject.name);
-        if (collision.gameObject.CompareTag(Configuration.Tags.JumpTrigger))
+        if (collision.CompareTag(Configuration.Tags.JumpTrigger))
         {
             if (_playerRigidbody2D.velocity.y > 0 && _playerRigidbody2D.velocity.x != 0)
             {

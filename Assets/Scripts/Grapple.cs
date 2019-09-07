@@ -14,7 +14,7 @@ public class Grapple : MonoBehaviour
     private float _swingSpeed = 5f;
 
     [SerializeField]
-    private float _pushDelay = 1f;
+    private float _swingSpeedLerp = 10f;
 
     [SerializeField]
     private float _maxFlyDistance = 20f;
@@ -33,20 +33,20 @@ public class Grapple : MonoBehaviour
 
     #endregion
 
-    private DistanceJoint2D _playerDistanceJoint2D;
+    private HingeJoint2D _playerHingeJoint2D;
     private Movement _playerMovement;
+    private GameObject _grapplePoint;
 
     private LineRenderer _lineRenderer;
 
     private bool _isGrappled;
     private bool _isReturning;
     private bool _isInUse;
-    private float _pushTimer;
 
     void Start()
     {
         _lineRenderer = GetComponent<LineRenderer>();
-        _playerDistanceJoint2D = _playerRigidbody2D.GetComponent<DistanceJoint2D>();
+        _playerHingeJoint2D = _playerRigidbody2D.GetComponent<HingeJoint2D>();
         _playerMovement = _playerRigidbody2D.GetComponent<Movement>();
     }
 
@@ -68,88 +68,83 @@ public class Grapple : MonoBehaviour
             }
             else
             {
-                _pushTimer -= Time.deltaTime;
                 _lineRenderer.SetPosition(1, new Vector3(_playerRigidbody2D.position.x, _playerRigidbody2D.position.y));
                 float x = Input.GetAxis(Configuration.Input.HorizontalAxis);
-                if (Mathf.Abs(x) > 0.1)
+
+                if (x > 0 && _playerRigidbody2D.velocity.x >= 0 || x < 0 && _playerRigidbody2D.velocity.x <= 0)
                 {
-                    // TODO: add restrictions on how much velocity you can gain per swing
-                    if (_pushTimer <= 0)
-                    {
-                        if ((_playerRigidbody2D.velocity.x > 0 && x > 0) || (_playerRigidbody2D.velocity.x < 0 && x < 0))
-                        {
-                            _playerRigidbody2D.velocity = new Vector2(x, 0).normalized * _swingSpeed;
-                            _pushTimer = _pushDelay;
-                        }
-                    }
+                    _playerRigidbody2D.velocity = Vector2.Lerp(_playerRigidbody2D.velocity,
+                        new Vector2(_playerRigidbody2D.velocity.x + x * _swingSpeed, _playerRigidbody2D.velocity.y), _swingSpeedLerp * Time.deltaTime);
                 }
             }
-
         }
-        else
+        else if (_isInUse)
+        {
+            DrawRope();
+            ReturnGrapple();
+        }
+        else if (Input.GetButtonDown(Configuration.Input.GrappleButton))
         {
             // Throw grapple
-            if (Input.GetButtonDown(Configuration.Input.GrappleButton))
+            _isInUse = true;
+            _grappleRigidbody2D.transform.position = _playerRigidbody2D.position;
+            StartCoroutine(WaitForEndOfFrameAndThrow());
+        }
+    }
+
+    private void DrawRope()
+    {
+        _lineRenderer.SetPosition(0, new Vector3(_grappleRigidbody2D.position.x, _grappleRigidbody2D.position.y));
+        _lineRenderer.SetPosition(1, new Vector3(_playerRigidbody2D.position.x, _playerRigidbody2D.position.y));
+    }
+
+    private void ReturnGrapple()
+    {
+        float distance = Vector2.Distance(_grappleRigidbody2D.position, _playerRigidbody2D.position);
+        if (_isReturning)
+        {
+            if (distance <= 0.5f)
             {
-                if (!_isInUse)
-                {
-                    _isInUse = true;
-                    _grappleRigidbody2D.transform.position = _playerRigidbody2D.position;
-                    StartCoroutine(WaitForEndOfFrameAndThrow());
-                }
+                DisableGrapple();
             }
             else
             {
-                if (_isInUse)
-                {
-                    _lineRenderer.SetPosition(0, new Vector3(_grappleRigidbody2D.position.x, _grappleRigidbody2D.position.y));
-                    _lineRenderer.SetPosition(1, new Vector3(_playerRigidbody2D.position.x, _playerRigidbody2D.position.y));
-
-                    float distance = Vector2.Distance(_grappleRigidbody2D.position, _playerRigidbody2D.position);
-                    if (_isReturning)
-                    {
-                        if (distance <= 0.5f)
-                        {
-                            DisableGrapple();
-                        }
-                        else
-                        {
-                            Vector2 direction = _playerRigidbody2D.position - _grappleRigidbody2D.position;
-                            _grappleRigidbody2D.velocity = direction.normalized * _throwSpeed;
-                        }
-                    }
-                    else
-                    {
-                        if (distance >= _maxFlyDistance)
-                            _isReturning = true;
-                    }
-                }
+                Vector2 direction = _playerRigidbody2D.position - _grappleRigidbody2D.position;
+                _grappleRigidbody2D.velocity = direction.normalized * _throwSpeed;
             }
+        }
+        else
+        {
+            if (distance >= _maxFlyDistance)
+                _isReturning = true;
         }
     }
 
     private void DetachGrapple()
     {
+        _grapplePoint.SetActive(false);
         _grappleRigidbody2D.bodyType = RigidbodyType2D.Dynamic;
         _playerMovement.enabled = true;
-        _playerDistanceJoint2D.enabled = false;
+        _playerHingeJoint2D.enabled = false;
         _isGrappled = false;
         _isReturning = true;
     }
 
-    public void GrappleHitTraget(Collider2D collision)
+    public void GrappleHitTraget(Rigidbody2D grappleJoint)
     {
         if (_isReturning) return;
 
+        _grapplePoint = grappleJoint.gameObject;
+        _grapplePoint.SetActive(true);
+
         _playerMovement.enabled = false;
         _isGrappled = _isInUse = true;
-        _grappleRigidbody2D.position = collision.transform.position;
-        _playerDistanceJoint2D.enabled = true;
-        _grappleRigidbody2D.bodyType = RigidbodyType2D.Kinematic;
-        _grappleRigidbody2D.velocity = Vector2.zero;
+        _grappleRigidbody2D.bodyType = RigidbodyType2D.Static;
+        _grappleRigidbody2D.position = grappleJoint.position;
+        _playerHingeJoint2D.enabled = true;
+        _playerHingeJoint2D.connectedBody = grappleJoint;
 
-        _lineRenderer.SetPosition(0, new Vector3(_grappleRigidbody2D.position.x, _grappleRigidbody2D.position.y));
-        _lineRenderer.SetPosition(1, new Vector3(_playerRigidbody2D.position.x, _playerRigidbody2D.position.y));
+        DrawRope();
     }
 
     public void GrappleHitWall()
@@ -159,7 +154,7 @@ public class Grapple : MonoBehaviour
         int hitCount = _grappleRigidbody2D.Cast(_playerRigidbody2D.position - _grappleRigidbody2D.position, filter, hitResults);
 
         // Player is behind a wall and grapple is stuck, so have to disable it
-        if(hitCount > 0 && _isReturning)
+        if (hitCount > 0 && _isReturning)
         {
             DisableGrapple();
             return;

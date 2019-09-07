@@ -7,6 +7,7 @@ TagManager:
   - JumpTrigger
   - SwapField
   - SwapTarget
+  - GrapplePoint
   layers:
   - Default
   - TransparentFX

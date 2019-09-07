@@ -28,6 +28,9 @@ public class SwapAbility : MonoBehaviour
     [SerializeField]
     private Transform _markPrefab = null;
 
+    [SerializeField]
+    private float _markOffsetY = 0.6f;
+
     private SpriteRenderer _spriteRenderer;
     private Transform _playerTransform;
     private float _cooldownTimer;
@@ -37,18 +40,20 @@ public class SwapAbility : MonoBehaviour
     private bool _inUse;
 
     private Dictionary<Transform, Transform> _targets = new Dictionary<Transform, Transform>(2);
+    private HashSet<Transform> _availableTargets;
 
     void Start()
     {
         _spriteRenderer = GetComponent<SpriteRenderer>();
         _playerTransform = transform.parent;
+        _availableTargets = new HashSet<Transform>();
     }
 
     void Update()
     {
         if (_onCooldown)
         {
-            if(_cooldownTimer <= 0)
+            if (_cooldownTimer <= 0)
             {
                 _onCooldown = false;
             }
@@ -61,7 +66,7 @@ public class SwapAbility : MonoBehaviour
         {
             if (Input.GetButtonDown(Configuration.Input.SwapButton))
             {
-                if(_inUse)
+                if (_inUse)
                 {
                     SwapFinished(true);
                 }
@@ -73,45 +78,74 @@ public class SwapAbility : MonoBehaviour
                     _useTimer = _useTime;
                     _inUse = true;
                 }
-                
+
             }
-            if(_inUse)
+            if (_inUse)
             {
-                if(_useTimer <= 0)
+                if (_useTimer <= 0)
                 {
                     SwapFinished();
                 }
                 else
                 {
                     _useTimer -= Time.deltaTime;
-                    if(Input.GetButtonDown(Configuration.Input.CancelButton))
+                    if (Input.GetButtonDown(Configuration.Input.CancelButton))
                     {
                         RemoveSwapMarks();
                         _targets.Clear();
                         SwapFinished();
                     }
-                    else if(Input.GetButtonDown(Configuration.Input.ActionButton))
+                    else if (Input.GetButtonDown(Configuration.Input.ActionButton))
                     {
                         var mousePosition = Camera.main.ScreenToWorldPoint(Input.mousePosition);
-                        var hit = Physics2D.Raycast(mousePosition, Vector2.zero);
-                        if (hit.transform != null)
+                        var hitTransform = Physics2D.Raycast(mousePosition, Vector2.zero).transform;
+                        if (hitTransform != null)
                         {
-                            if(hit.transform.tag == Configuration.Tags.SwapTarget && !_targets.ContainsKey(hit.transform))
+                            if (_availableTargets.Contains(hitTransform))
                             {
-                                var mark = Instantiate(_markPrefab);
-                                mark.SetParent(hit.transform);
-                                mark.localPosition = Vector3.zero;
-                                _targets.Add(hit.transform, mark);
+                                if (_targets.ContainsKey(hitTransform))
+                                {
+                                    Destroy(_targets[hitTransform].gameObject);
+                                    _targets.Remove(hitTransform);
+                                }
+                                else
+                                {
+                                    var mark = Instantiate(_markPrefab);
+                                    mark.SetParent(hitTransform.transform);
+                                    mark.localPosition = new Vector3(0, _markOffsetY);
+                                    _targets.Add(hitTransform.transform, mark);
 
-                                if (_targets.Count == 2)
-                                    SwapFinished();
+                                    if (_targets.Count == 2)
+                                        SwapFinished();
+                                }
                             }
                         }
                     }
                 }
             }
         }
-        
+    }
+
+    private void OnTriggerEnter2D(Collider2D collision)
+    {
+        if (collision.CompareTag(Configuration.Tags.SwapTarget))
+        {
+            _availableTargets.Add(collision.transform);
+        }
+    }
+
+    private void OnTriggerExit2D(Collider2D collision)
+    {
+        if (collision.CompareTag(Configuration.Tags.SwapTarget))
+        {
+            Transform targetTransform = collision.transform;
+            if(_targets.ContainsKey(targetTransform))
+            {
+                Destroy(_targets[targetTransform].gameObject);
+                _targets.Remove(targetTransform);
+            }
+            _availableTargets.Remove(targetTransform);
+        }
     }
 
     private void SwapFinished(bool isConfirmed = false)
@@ -131,7 +165,7 @@ public class SwapAbility : MonoBehaviour
     private void SwapTargets(bool isConfirmed)
     {
         if (_targets.Count == 0) return;
-        if(_targets.Count == 1 && isConfirmed)
+        if (_targets.Count == 1 && isConfirmed)
         {
             SwapTargetsPositions(_targets.Keys.ElementAt(0), _playerTransform);
         }
