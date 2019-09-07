@@ -35,6 +35,7 @@ public class Grapple : MonoBehaviour
 
     private HingeJoint2D _playerHingeJoint2D;
     private Movement _playerMovement;
+    private BetterJumping _betterJumping;
     private GameObject _grapplePoint;
 
     private LineRenderer _lineRenderer;
@@ -48,6 +49,7 @@ public class Grapple : MonoBehaviour
         _lineRenderer = GetComponent<LineRenderer>();
         _playerHingeJoint2D = _playerRigidbody2D.GetComponent<HingeJoint2D>();
         _playerMovement = _playerRigidbody2D.GetComponent<Movement>();
+        _betterJumping = _playerRigidbody2D.GetComponent<BetterJumping>();
     }
 
     void Update()
@@ -125,6 +127,7 @@ public class Grapple : MonoBehaviour
         _grapplePoint.SetActive(false);
         _grappleRigidbody2D.bodyType = RigidbodyType2D.Dynamic;
         _playerMovement.enabled = true;
+        _betterJumping.enabled = true;
         _playerHingeJoint2D.enabled = false;
         _isGrappled = false;
         _isReturning = true;
@@ -138,6 +141,7 @@ public class Grapple : MonoBehaviour
         _grapplePoint.SetActive(true);
 
         _playerMovement.enabled = false;
+        _betterJumping.enabled = false;
         _isGrappled = _isInUse = true;
         _grappleRigidbody2D.bodyType = RigidbodyType2D.Static;
         _grappleRigidbody2D.position = grappleJoint.position;

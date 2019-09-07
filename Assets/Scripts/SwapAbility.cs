@@ -26,11 +26,15 @@ public class SwapAbility : MonoBehaviour
     private float _timeScale = 0.5f;
 
     [SerializeField]
+    private float _markOffsetY = 0.6f;
+
+    [SerializeField]
     private Transform _markPrefab = null;
 
     [SerializeField]
-    private float _markOffsetY = 0.6f;
+    private Collision _playerCollision;
 
+    private Collider2D _playerCollider2D;
     private SpriteRenderer _spriteRenderer;
     private Transform _playerTransform;
     private float _cooldownTimer;
@@ -46,6 +50,7 @@ public class SwapAbility : MonoBehaviour
     {
         _spriteRenderer = GetComponent<SpriteRenderer>();
         _playerTransform = transform.parent;
+        _playerCollider2D = _playerCollision.GetComponent<Collider2D>();
         _availableTargets = new HashSet<Transform>();
     }
 
@@ -165,16 +170,47 @@ public class SwapAbility : MonoBehaviour
     private void SwapTargets(bool isConfirmed)
     {
         if (_targets.Count == 0) return;
+
         if (_targets.Count == 1 && isConfirmed)
         {
-            SwapTargetsPositions(_targets.Keys.ElementAt(0), _playerTransform);
+            Transform target = _targets.Keys.ElementAt(0);
+            SwapTargetsPositions2(target, _playerTransform, target.GetComponent<Collider2D>(), _playerCollider2D);
         }
         else if (_targets.Count == 2)
         {
-            SwapTargetsPositions(_targets.Keys.ElementAt(0), _targets.Keys.ElementAt(1));
+            Transform target = _targets.Keys.ElementAt(0);
+            Transform target2 = _targets.Keys.ElementAt(1);
+
+            SwapTargetsPositions2(target, target2, target.GetComponent<Collider2D>(), target2.GetComponent<Collider2D>());
         }
         RemoveSwapMarks();
         _targets.Clear();
+    }
+
+    private float GetNewTargetPosition(Collider2D targetCollider, Transform targetTransform, 
+        Collider2D target2Collider, Transform target2Transform)
+    {
+        var goundFilter = new ContactFilter2D() { layerMask = Configuration.GroundLayer };
+        var hitResults = new RaycastHit2D[1];
+        float traget2NewYPos = targetTransform.position.y;
+
+        if (targetCollider.Cast(Vector2.down, goundFilter, hitResults) > 0)
+        {
+            float targetGroundY = hitResults[0].point.y;
+            if (Mathf.Abs(targetGroundY - targetCollider.bounds.min.y) < 0.05f)
+            {
+                traget2NewYPos = ApplyOffset(targetGroundY, target2Collider, target2Transform);
+                if (targetTransform.position.y > traget2NewYPos)
+                    traget2NewYPos = targetTransform.position.y;
+            }
+        }
+
+        return traget2NewYPos;
+    }
+
+    private float ApplyOffset(float basePosition, Collider2D collider2D, Transform target)
+    {
+        return basePosition + collider2D.bounds.size.y / 2 - collider2D.offset.y * target.localScale.y;
     }
 
     private void RemoveSwapMarks()
@@ -184,6 +220,7 @@ public class SwapAbility : MonoBehaviour
             Destroy(marks.gameObject);
         }
     }
+
 
     private void SwapTargetsPositions(Transform target1, Transform target2)
     {
@@ -196,6 +233,36 @@ public class SwapAbility : MonoBehaviour
 
         var velocity = rigidbody1.velocity;
         rigidbody1.velocity = rigidbody2.velocity;
+        rigidbody2.velocity = velocity;
+    }
+
+    private void SwapTargetsPositions2(Transform target, Transform target2, Collider2D targetCollider, Collider2D target2Collider)
+    {
+        float targetNewYPos;
+        float target2NewYPos = GetNewTargetPosition(targetCollider, target, target2Collider, target2);
+
+        if (_playerCollision.OnGround)
+        {
+            float target2GroundY = target2Collider.bounds.min.y;
+            targetNewYPos = ApplyOffset(target2GroundY, targetCollider, target);
+
+            if (target2.position.y > targetNewYPos)
+                targetNewYPos = target2.position.y;
+        }
+        else
+        {
+            targetNewYPos = target2.position.y;
+        }
+
+        float position = target.position.x;
+        target.position = new Vector2(target2.position.x, targetNewYPos);
+        target2.position = new Vector3(position, target2NewYPos);
+
+        var rigidbody = target.GetComponent<Rigidbody2D>();
+        var rigidbody2 = target2.GetComponent<Rigidbody2D>();
+
+        var velocity = rigidbody.velocity;
+        rigidbody.velocity = rigidbody2.velocity;
         rigidbody2.velocity = velocity;
     }
 }

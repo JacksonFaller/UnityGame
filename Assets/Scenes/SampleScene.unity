@@ -3679,7 +3679,7 @@ CircleCollider2D:
   m_IsTrigger: 0
   m_UsedByEffector: 0
   m_UsedByComposite: 0
-  m_Offset: {x: 0, y: 0.06}
+  m_Offset: {x: 0, y: -0.2}
   serializedVersion: 2
   m_Radius: 0.49
 --- !u!50 &75124335
@@ -3711,8 +3711,8 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 75124333}
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: -32.94, y: -5.134, z: 5}
-  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_LocalPosition: {x: -32.94, y: -1.4, z: 5}
+  m_LocalScale: {x: 2, y: 2, z: 1}
   m_Children:
   - {fileID: 1530386440}
   m_Father: {fileID: 0}
@@ -6503,6 +6503,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   _fallMultiplier: 3
   _lowJumpMultiplier: 8
+  _collision: {fileID: 1976540736}
 --- !u!1 &234361388
 GameObject:
   m_ObjectHideFlags: 0
@@ -6606,9 +6607,10 @@ MonoBehaviour:
   _cooldownTime: 3
   _useTime: 3
   _timeScale: 0.3
+  _markOffsetY: 0.6
   _markPrefab: {fileID: 6788686212835715573, guid: 6bdc86f2c5e6a7d45bdf44b72e181ee2,
     type: 3}
-  _markOffsetY: 0.6
+  _playerCollision: {fileID: 1976540736}
 --- !u!212 &382432246
 SpriteRenderer:
   m_ObjectHideFlags: 0
@@ -26102,7 +26104,7 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 778347851}
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: -16.32, y: 0, z: 0}
+  m_LocalPosition: {x: -16.63, y: -5, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_Children:
   - {fileID: 1350780333}
@@ -26122,8 +26124,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _throwSpeed: 25
-  _swingSpeed: 3
-  _swingSpeedLerp: 12
+  _swingSpeed: 1.3
+  _swingSpeedLerp: 2.3
   _maxFlyDistance: 5.8
   _grappleObjectsLayer:
     serializedVersion: 2
