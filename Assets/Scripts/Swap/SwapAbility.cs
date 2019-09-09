@@ -29,12 +29,12 @@ public class SwapAbility : MonoBehaviour
     private float _markOffsetY = 0.6f;
 
     [SerializeField]
-    private Transform _markPrefab = null;
+    private GameObject _markPrefab = null;
 
     [SerializeField]
-    private Collision _playerCollision;
+    private Collision _playerCollision = null;
 
-    private Collider2D _playerCollider2D;
+    private SwapTarget _playerSwapTarget;
     private SpriteRenderer _spriteRenderer;
     private Transform _playerTransform;
     private float _cooldownTimer;
@@ -43,14 +43,14 @@ public class SwapAbility : MonoBehaviour
     private bool _onCooldown;
     private bool _inUse;
 
-    private Dictionary<Transform, Transform> _targets = new Dictionary<Transform, Transform>(2);
+    private Dictionary<Transform, SwapTarget> _targets = new Dictionary<Transform, SwapTarget>(2);
     private HashSet<Transform> _availableTargets;
 
     void Start()
     {
         _spriteRenderer = GetComponent<SpriteRenderer>();
         _playerTransform = transform.parent;
-        _playerCollider2D = _playerCollision.GetComponent<Collider2D>();
+        _playerSwapTarget = _playerCollision.GetComponent<SwapTarget>();
         _availableTargets = new HashSet<Transform>();
     }
 
@@ -110,15 +110,14 @@ public class SwapAbility : MonoBehaviour
                             {
                                 if (_targets.ContainsKey(hitTransform))
                                 {
-                                    Destroy(_targets[hitTransform].gameObject);
+                                    _targets[hitTransform].RemoveMark();
                                     _targets.Remove(hitTransform);
                                 }
                                 else
                                 {
-                                    var mark = Instantiate(_markPrefab);
-                                    mark.SetParent(hitTransform.transform);
-                                    mark.localPosition = new Vector3(0, _markOffsetY);
-                                    _targets.Add(hitTransform.transform, mark);
+                                    SwapTarget swapTarget = hitTransform.GetComponent<SwapTarget>();
+                                    swapTarget.AddMark(_markPrefab, _markOffsetY);
+                                    _targets.Add(hitTransform, swapTarget);
 
                                     if (_targets.Count == 2)
                                         SwapFinished();
@@ -144,7 +143,7 @@ public class SwapAbility : MonoBehaviour
         if (collision.CompareTag(Configuration.Tags.SwapTarget))
         {
             Transform targetTransform = collision.transform;
-            if(_targets.ContainsKey(targetTransform))
+            if (_targets.ContainsKey(targetTransform))
             {
                 Destroy(_targets[targetTransform].gameObject);
                 _targets.Remove(targetTransform);
@@ -174,50 +173,24 @@ public class SwapAbility : MonoBehaviour
         if (_targets.Count == 1 && isConfirmed)
         {
             Transform target = _targets.Keys.ElementAt(0);
-            SwapTargetsPositions2(target, _playerTransform, target.GetComponent<Collider2D>(), _playerCollider2D);
+            SwapTargetsPositions2(target, _playerTransform, _targets[target], _playerSwapTarget);
         }
         else if (_targets.Count == 2)
         {
             Transform target = _targets.Keys.ElementAt(0);
             Transform target2 = _targets.Keys.ElementAt(1);
 
-            SwapTargetsPositions2(target, target2, target.GetComponent<Collider2D>(), target2.GetComponent<Collider2D>());
+            SwapTargetsPositions2(target, target2, _targets[target], _targets[target2]);
         }
         RemoveSwapMarks();
         _targets.Clear();
     }
 
-    private float GetNewTargetPosition(Collider2D targetCollider, Transform targetTransform, 
-        Collider2D target2Collider, Transform target2Transform)
-    {
-        var goundFilter = new ContactFilter2D() { layerMask = Configuration.GroundLayer };
-        var hitResults = new RaycastHit2D[1];
-        float traget2NewYPos = targetTransform.position.y;
-
-        if (targetCollider.Cast(Vector2.down, goundFilter, hitResults) > 0)
-        {
-            float targetGroundY = hitResults[0].point.y;
-            if (Mathf.Abs(targetGroundY - targetCollider.bounds.min.y) < 0.05f)
-            {
-                traget2NewYPos = ApplyOffset(targetGroundY, target2Collider, target2Transform);
-                if (targetTransform.position.y > traget2NewYPos)
-                    traget2NewYPos = targetTransform.position.y;
-            }
-        }
-
-        return traget2NewYPos;
-    }
-
-    private float ApplyOffset(float basePosition, Collider2D collider2D, Transform target)
-    {
-        return basePosition + collider2D.bounds.size.y / 2 - collider2D.offset.y * target.localScale.y;
-    }
-
     private void RemoveSwapMarks()
     {
-        foreach (var marks in _targets.Values)
+        foreach (var swapTarget in _targets.Values)
         {
-            Destroy(marks.gameObject);
+            swapTarget.RemoveMark();
         }
     }
 
@@ -236,27 +209,11 @@ public class SwapAbility : MonoBehaviour
         rigidbody2.velocity = velocity;
     }
 
-    private void SwapTargetsPositions2(Transform target, Transform target2, Collider2D targetCollider, Collider2D target2Collider)
+    private void SwapTargetsPositions2(Transform target, Transform target2, SwapTarget targetCollider, SwapTarget target2Collider)
     {
-        float targetNewYPos;
-        float target2NewYPos = GetNewTargetPosition(targetCollider, target, target2Collider, target2);
-
-        if (_playerCollision.OnGround)
-        {
-            float target2GroundY = target2Collider.bounds.min.y;
-            targetNewYPos = ApplyOffset(target2GroundY, targetCollider, target);
-
-            if (target2.position.y > targetNewYPos)
-                targetNewYPos = target2.position.y;
-        }
-        else
-        {
-            targetNewYPos = target2.position.y;
-        }
-
-        float position = target.position.x;
-        target.position = new Vector2(target2.position.x, targetNewYPos);
-        target2.position = new Vector3(position, target2NewYPos);
+        var targetNewPosition = GetNewTargetPosition(target2Collider, target2, targetCollider);
+        target2.position = GetNewTargetPosition(targetCollider, target, target2Collider);
+        target.position = targetNewPosition;
 
         var rigidbody = target.GetComponent<Rigidbody2D>();
         var rigidbody2 = target2.GetComponent<Rigidbody2D>();
@@ -264,5 +221,40 @@ public class SwapAbility : MonoBehaviour
         var velocity = rigidbody.velocity;
         rigidbody.velocity = rigidbody2.velocity;
         rigidbody2.velocity = velocity;
+    }
+
+    private Vector2 GetNewTargetPosition(SwapTarget swapTarget, Transform targetTransform,
+        SwapTarget swapTarget2)
+    {
+        var goundFilter = new ContactFilter2D() { layerMask = Configuration.GroundLayer, useLayerMask = true };
+        var hitResults = new RaycastHit2D[1];
+
+        float x = targetTransform.position.x;
+        float y = targetTransform.position.y;
+
+        if (swapTarget.Collider.Cast(Vector2.down, goundFilter, hitResults, swapTarget2.CollisionPointsDistances.Bottom) > 0)
+        {
+            y = hitResults[0].point.y + swapTarget2.CollisionPointsDistances.Bottom;
+        }
+        else if (swapTarget.Collider.Cast(Vector2.up, goundFilter, hitResults, swapTarget2.CollisionPointsDistances.Top) > 0)
+        {
+            y = hitResults[0].point.y - swapTarget2.CollisionPointsDistances.Top;
+        }
+
+        if (swapTarget.Collider.Cast(Vector2.right, goundFilter, hitResults, swapTarget2.CollisionPointsDistances.Right) > 0)
+        {
+            x = hitResults[0].point.x - swapTarget2.CollisionPointsDistances.Right;
+        }
+        else if (swapTarget.Collider.Cast(Vector2.left, goundFilter, hitResults, swapTarget2.CollisionPointsDistances.Left) > 0)
+        {
+            x = hitResults[0].point.x + swapTarget2.CollisionPointsDistances.Left;
+        }
+
+        return new Vector2(x, y);
+    }
+
+    private float ApplyOffset(float basePosition, Collider2D collider2D, Transform target)
+    {
+        return basePosition + collider2D.bounds.size.y / 2 - collider2D.offset.y * target.localScale.y;
     }
 }

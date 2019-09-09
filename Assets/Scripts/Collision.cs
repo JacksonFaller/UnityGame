@@ -1,4 +1,5 @@
-﻿using System.Collections;
+﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
@@ -18,6 +19,11 @@ public class Collision : MonoBehaviour
     [Header("Collision")]
     public float collisionRadius = 0.25f;
     public Vector2 bottomOffset, rightOffset, leftOffset;
+
+    public event Action<Collider2D> OnTriggerEnter;
+    public event Action<Collider2D> OnTriggerExit;
+    public event Action<Collision2D> OnCollisionEnter;
+    public event Action<Collision2D> OnCollisionExit;
 
     void Update()
     {  
@@ -39,5 +45,25 @@ public class Collision : MonoBehaviour
         Gizmos.DrawWireSphere((Vector2)transform.position  + bottomOffset, collisionRadius);
         Gizmos.DrawWireSphere((Vector2)transform.position + rightOffset, collisionRadius);
         Gizmos.DrawWireSphere((Vector2)transform.position + leftOffset, collisionRadius);
+    }
+
+    private void OnTriggerEnter2D(Collider2D collision)
+    {
+        OnTriggerEnter?.Invoke(collision);
+    }
+
+    private void OnTriggerExit2D(Collider2D collision)
+    {
+        OnTriggerExit?.Invoke(collision);
+    }
+
+    private void OnCollisionEnter2D(Collision2D collision)
+    {
+        OnCollisionEnter?.Invoke(collision);
+    }
+
+    private void OnCollisionExit2D(Collision2D collision)
+    {
+        OnCollisionExit?.Invoke(collision);
     }
 }

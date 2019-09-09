@@ -154,7 +154,7 @@ public class Grapple : MonoBehaviour
     public void GrappleHitWall()
     {
         var hitResults = new RaycastHit2D[1];
-        var filter = new ContactFilter2D() { layerMask = Configuration.GroundLayer };
+        var filter = new ContactFilter2D() { layerMask = Configuration.GroundLayer, useLayerMask = true };
         int hitCount = _grappleRigidbody2D.Cast(_playerRigidbody2D.position - _grappleRigidbody2D.position, filter, hitResults);
 
         // Player is behind a wall and grapple is stuck, so have to disable it

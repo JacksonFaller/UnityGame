@@ -14,7 +14,7 @@ public class BetterJumping : MonoBehaviour
     private float _lowJumpMultiplier = 8f;
 
     [SerializeField]
-    private Collision _collision;
+    private Collision _collision = null;
 
     private bool _isJumping;
 

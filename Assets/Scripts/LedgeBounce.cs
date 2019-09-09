@@ -13,9 +13,17 @@ public class LedgeBounce : MonoBehaviour
     [SerializeField]
     private float _boostTime = 0.3f;
 
+    [SerializeField]
+    private Collision _collision = null;
+
     public bool IsLedgeBouncing { get; private set; }
 
-    private void OnTriggerEnter2D(Collider2D collision)
+    private void Start()
+    {
+        _collision.OnTriggerEnter += TriggerEnter2D;
+    }
+
+    private void TriggerEnter2D(Collider2D collision)
     {
         if (collision.CompareTag(Configuration.Tags.JumpTrigger))
         {

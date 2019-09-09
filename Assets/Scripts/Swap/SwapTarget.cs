@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-[RequireComponent(typeof(SpriteRenderer))]
 [RequireComponent(typeof(Collider2D))]
 public class SwapTarget : MonoBehaviour
 {
@@ -15,8 +14,12 @@ public class SwapTarget : MonoBehaviour
     private SpriteRenderer _spriteRenderer;
     private GameObject _outlineObject;
 
-    private string _tag;
+    // Distance from the object position to the ground (when gounded)
+    public CollisionPointsDistances CollisionPointsDistances { get; private set; }
 
+    public Collider2D Collider { get; private set; }
+
+    private GameObject _mark;
 
     protected GameObject OutlineObject
     {
@@ -41,41 +44,42 @@ public class SwapTarget : MonoBehaviour
 
     void Start()
     {
-        _spriteRenderer = GetComponent<SpriteRenderer>();
+        //_spriteRenderer = GetComponent<SpriteRenderer>();
+        Collider = GetComponent<Collider2D>();
+        CollisionPointsDistances = new CollisionPointsDistances
+        {
+            Top = Collider.bounds.max.y - transform.position.y,
+            Bottom = transform.position.y - Collider.bounds.min.y,
+            Left = transform.position.x - Collider.bounds.min.x,
+            Right = Collider.bounds.max.x - transform.position.x
+        };
     }
 
     void Update()
     {
     }
 
-    private void OnTriggerEnter2D(Collider2D collision)
+    public void AddMark(GameObject mark, float offsetY)
     {
-        if(collision.tag == Configuration.Tags.SwapField)
+        if(_mark == null)
         {
-            _tag = transform.tag;
-            transform.tag = Configuration.Tags.SwapTarget;
+            _mark = Instantiate(mark);
+            _mark.transform.SetParent(transform);
+            _mark.transform.localPosition = new Vector3(0, offsetY);
         }
+        _mark.SetActive(true);
     }
 
-    private void OnTriggerExit2D(Collider2D collision)
+    public void RemoveMark()
     {
-        if (collision.tag == Configuration.Tags.SwapField)
-        {
-            transform.tag = _tag;
-        }
+        _mark.SetActive(false);
     }
+}
 
-    void OnMouseDown()
-    {
-    }
-
-    void OnMouseEnter()
-    {
-        //OutlineObject.SetActive(true);
-    }
-
-    void OnMouseExit()
-    {
-        //OutlineObject.SetActive(false);
-    }
+public class CollisionPointsDistances
+{
+    public float Top { get; set; }
+    public float Bottom { get; set; }
+    public float Left { get; set; }
+    public float Right { get; set; }
 }
