@@ -9,4 +9,14 @@ public class InventoryItemObject : ScriptableObject
     public string Name;
     public string Description;
     public int SellValue;
+    public AbilityType AbilityType;
+    public float StatModifier;
+    public MonoBehaviour Effect;
+}
+
+public enum AbilityType
+{
+    StatModifier,
+    StatMultiplier,
+    Effect
 }

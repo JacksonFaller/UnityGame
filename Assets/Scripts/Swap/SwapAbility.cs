@@ -78,7 +78,7 @@ public class SwapAbility : MonoBehaviour
                 else
                 {
                     _spriteRenderer.enabled = true;
-                    _spriteRenderer.transform.DOScale(new Vector3(_maxSize, _maxSize, 1f), _growTime).SetUpdate(true);
+                    _spriteRenderer.transform.DOScale(new Vector3(_maxSize, _maxSize), _growTime).SetUpdate(true);
                     Time.timeScale = _timeScale;
                     _useTimer = _useTime;
                     _inUse = true;
@@ -93,7 +93,7 @@ public class SwapAbility : MonoBehaviour
                 }
                 else
                 {
-                    _useTimer -= Time.deltaTime;
+                    _useTimer -= Time.deltaTime / Time.timeScale;
                     if (Input.GetButtonDown(Configuration.Input.CancelButton))
                     {
                         RemoveSwapMarks();

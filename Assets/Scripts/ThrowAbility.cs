@@ -9,7 +9,11 @@ public class ThrowAbility : MonoBehaviour
     private Collision _collision = null;
 
     [SerializeField]
-    private SpriteRenderer _playerSpriterRenderer;
+    private SpriteRenderer _playerSpriterRenderer = null;
+
+    [SerializeField]
+    private LayerMask _Layer;
+
     private Transform _pickedUpItem;
     private HashSet<Transform> _collectableItems;
 
@@ -54,7 +58,7 @@ public class ThrowAbility : MonoBehaviour
 
     private void CollisionEnter2D(Collision2D collision)
     {
-        if (collision.gameObject.layer == LayerMask.NameToLayer("Collectables"))
+        if (_Layer.ContainsLayer(collision.gameObject.layer))
         {
             _collectableItems.Add(collision.transform);
         }
@@ -62,7 +66,7 @@ public class ThrowAbility : MonoBehaviour
 
     private void CollisionExit2D(Collision2D collision)
     {
-        if (collision.gameObject.layer == LayerMask.NameToLayer("Collectables"))
+        if (_Layer.ContainsLayer(collision.gameObject.layer))
         {
             _collectableItems.Remove(collision.transform);
         }

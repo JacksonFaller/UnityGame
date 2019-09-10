@@ -5,10 +5,12 @@ using UnityEngine;
 public class Inventory : MonoBehaviour
 {
     [SerializeField]
-    private float _pickupRadius;
+    private float _pickupRadius = 5f;
 
     [SerializeField]
     private LayerMask _mask;
+
+    public MonoBehaviour Script;
 
     private HashSet<InventoryItemObject> _items;
 

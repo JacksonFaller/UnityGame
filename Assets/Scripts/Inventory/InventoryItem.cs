@@ -5,17 +5,22 @@ using UnityEngine;
 public class InventoryItem : MonoBehaviour
 {
     [SerializeField]
-    private InventoryItemObject _inventoryItem;
+    private InventoryItemObject _inventoryItem = null;
+
+    [SerializeField]
+    private MonoBehaviour _effect = null;
 
     public InventoryItemObject InventoryItemObject => _inventoryItem;
 
-    // Start is called before the first frame update
     void Start()
     {
-        
+        if(_inventoryItem.AbilityType == AbilityType.Effect)
+        {
+            if (_effect == null) Debug.LogError("Ability has type of Effect but Effect script is not referenced");
+            _inventoryItem.Effect = _effect;
+        }
     }
 
-    // Update is called once per frame
     void Update()
     {
         
