@@ -14,11 +14,7 @@ public class InventoryItem : MonoBehaviour
 
     void Start()
     {
-        if(_inventoryItem.AbilityType == AbilityType.Effect)
-        {
-            if (_effect == null) Debug.LogError("Ability has type of Effect but Effect script is not referenced");
-            _inventoryItem.Effect = _effect;
-        }
+        _inventoryItem.Effect = _effect;
     }
 
     void Update()

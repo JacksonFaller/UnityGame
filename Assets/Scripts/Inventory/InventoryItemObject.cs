@@ -1,22 +1,34 @@
-﻿using System.Collections;
+﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-[CreateAssetMenu(fileName = "New inverntory item", menuName = "Inventory item")]
+[CreateAssetMenu(fileName = "Inverntory item", menuName = "Inventory item")]
 public class InventoryItemObject : ScriptableObject
 {
+    public int Id;
     public Sprite Image;
     public string Name;
     public string Description;
     public int SellValue;
-    public AbilityType AbilityType;
-    public float StatModifier;
+    public int StackSize = 1;
     public MonoBehaviour Effect;
+    public List<StatModifier> StatModifiers;
 }
 
-public enum AbilityType
+[Serializable]
+public class StatModifier
 {
-    StatModifier,
-    StatMultiplier,
-    Effect
+    public Stat Stat;
+    public float Modifier;
+    public bool IsMultiplier;
+}
+
+public enum Stat
+{
+    Health,
+    Mana,
+    Stamina,
+    Attack,
+    Defence
 }

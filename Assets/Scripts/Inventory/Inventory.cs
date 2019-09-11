@@ -14,9 +14,12 @@ public class Inventory : MonoBehaviour
 
     private HashSet<InventoryItemObject> _items;
 
+    private List<ItemStack> _itemStacks;
+
     void Start()
     {
         _items = new HashSet<InventoryItemObject>();
+        _itemStacks = new List<ItemStack>();
     }
 
     void Update()
@@ -54,4 +57,38 @@ public class Inventory : MonoBehaviour
         }
     }
 
+}
+
+public class ItemStack
+{
+    public int Count { get; private set; }
+
+    public int StackSize => ItemObject.StackSize;
+
+    public InventoryItemObject ItemObject { get; }
+
+    public ItemStack(InventoryItemObject itemObject)
+    {
+        ItemObject = itemObject;
+    }
+
+    public int Add(int count = 1)
+    {
+        Count += count;
+        if(Count > ItemObject.StackSize)
+        {
+            count = Count - ItemObject.StackSize;
+            Count = ItemObject.StackSize;
+        }
+        return count;
+    }
+
+    public int Remove(int count = 1)
+    {
+        if (count > Count)
+            count = Count;
+
+        Count-= count;
+        return count;
+    }
 }
