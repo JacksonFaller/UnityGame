@@ -26,7 +26,7 @@ public class Collision : MonoBehaviour
     public event Action<Collision2D> OnCollisionExit;
 
     void Update()
-    {  
+    {
         OnGround = Physics2D.OverlapCircle((Vector2)transform.position + bottomOffset, collisionRadius, groundLayer);
         OnRightWall = Physics2D.OverlapCircle((Vector2)transform.position + rightOffset, collisionRadius, groundLayer);
         OnLeftWall = Physics2D.OverlapCircle((Vector2)transform.position + leftOffset, collisionRadius, groundLayer);

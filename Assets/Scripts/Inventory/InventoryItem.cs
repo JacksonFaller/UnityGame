@@ -14,7 +14,7 @@ public class InventoryItem : MonoBehaviour
 
     void Start()
     {
-        _inventoryItem.Effect = _effect;
+        //_inventoryItem.Effect = _effect;
     }
 
     void Update()

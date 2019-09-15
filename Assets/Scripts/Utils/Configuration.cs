@@ -8,6 +8,7 @@ using UnityEngine;
 public static class Configuration
 {
     public static readonly LayerMask GroundLayer =  LayerMask.GetMask("Ground");
+    public const int ThrowablesLayer = 14;
 
     public static class Input
     {
@@ -37,5 +38,6 @@ public static class Configuration
         public const string SwapField = "SwapField";
         public const string SwapTarget = "SwapTarget";
         public const string GrapplePoint = "GrapplePoint";
+        public const string ThrowableObject = "ThrowableObject";
     }
 }
