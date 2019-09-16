@@ -8,7 +8,7 @@ public class Inventory : MonoBehaviour
     private float _pickupRadius = 5f;
 
     [SerializeField]
-    private LayerMask _mask;
+    private LayerMask _mask = new LayerMask();
 
     public MonoBehaviour Script;
 

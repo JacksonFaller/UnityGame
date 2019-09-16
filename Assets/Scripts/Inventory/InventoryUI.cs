@@ -6,15 +6,15 @@ using UnityEngine;
 public class InventoryUI : MonoBehaviour
 {
     [SerializeField]
-    private Transform _gridCellPrefab;
+    private Transform _gridCellPrefab = null;
 
     [SerializeField]
-    private float _rowCount;
+    private int _rowCount = 1;
 
     [SerializeField]
-    private float _columnCount;
+    private int _columnCount = 10;
 
-    private GridLayout _gridLayout;
+    private GridLayout _gridLayout = null;
 
     void Start()
     {

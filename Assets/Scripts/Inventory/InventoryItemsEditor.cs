@@ -4,22 +4,29 @@ using System.Collections;
 using UnityEditor;
 using UnityEngine;
 using System.Linq;
+using System.IO;
+using Newtonsoft.Json;
+using System.Text;
 
 public class ItemsEditor : EditorWindow
 {
-    public InventoryItemObject InventoryItem;
+    private const string _settingsPath = "Assets/Configurations/ItemsEditorSettings.json";
+    private EditorSettings _settings;
 
-    private SerializedProperty _itemProperty;
-    private List<SerializedProperty> _childProperties = new List<SerializedProperty>();
+    public InventoryItemObject InventoryItem;
+    public ItemsDatabase ItemsDatabase;
+
     private SerializedObject _editorObject;
+    private SerializedProperty _itemProperty;
+    private SerializedProperty _database;
 
     private Dictionary<int, InventoryItemObject> _itemsDatabase;
+
     private string _itemName = string.Empty;
     private string[] _searchResults;
     private int _selectedIndex;
     private bool _isEdit;
     private bool _isSettingsOpened;
-    private string _itemDatabasePath;
 
 
     [MenuItem("Window/Items editor")]
@@ -36,10 +43,22 @@ public class ItemsEditor : EditorWindow
         _itemsDatabase.Add(testObj.Id, testObj);
         _searchResults = Array.Empty<string>();
 
-        UpdateProperties();
+        LoadSettings();
+        UpdateItemProperties();
+        _database = _editorObject.FindProperty("ItemsDatabase");
     }
 
     void OnGUI()
+    {
+        FindItem();
+        UpdateItem();
+        Settings();
+
+        //EditorGUILayout.PropertyField(Prop.FindPropertyRelative("Size"));
+        _editorObject.ApplyModifiedProperties();
+    }
+
+    private void FindItem()
     {
         GUILayout.Space(10);
         GUILayout.Label("Find item");
@@ -63,7 +82,7 @@ public class ItemsEditor : EditorWindow
             _isEdit = true;
             int key = _searchResults[_selectedIndex].GetHashCode();
             InventoryItem = _itemsDatabase[key].Copy();
-            UpdateProperties();
+            UpdateItemProperties();
             //InventoryItem = _searchResults[_selectedIndex];
         }
 
@@ -72,18 +91,15 @@ public class ItemsEditor : EditorWindow
 
         }
         GUILayout.EndHorizontal();
+    }
 
+    private void UpdateItem()
+    {
         GUILayout.Space(10);
         GUILayout.BeginVertical(GUI.skin.box);
 
 
-        // TODO: Replace with foreach in children properties
-        //EditorGUILayout.PropertyField(_itemProperty, new GUIContent("Item"), true);
-
-        foreach (var prop in _childProperties)
-        {
-            EditorGUILayout.PropertyField(prop, true);
-        }
+        EditorGUILayout.PropertyField(_itemProperty, new GUIContent("Item"), true);
 
         if (EditorGUI.EndChangeCheck())
         {
@@ -111,29 +127,24 @@ public class ItemsEditor : EditorWindow
 
             if (GUILayout.Button("Create"))
             {
-                if(!_itemsDatabase.ContainsKey(InventoryItem.Id))
+                if (!_itemsDatabase.ContainsKey(InventoryItem.Id))
                 {
                     _itemsDatabase.Add(InventoryItem.Id, InventoryItem);
                     InventoryItem = InventoryItem.Copy();
-                    UpdateProperties();
+                    UpdateItemProperties();
                 }
                 else
                 {
                     Debug.LogError($"Items database already contains item with name: {InventoryItem.Name}");
                 }
             }
-
-            //if (GUILayout.Button("Clear"))
-            //{
-            //    InventoryItem = new InventoryItemObject();
-            //    MainObject = new SerializedObject(this);
-            //    ItemProperty = MainObject.FindProperty("InventoryItem");
-            //}
-
         }
 
         GUILayout.EndVertical();
+    }
 
+    private void Settings()
+    {
         GUILayout.Space(10);
         GUILayout.BeginVertical(GUI.skin.box);
 
@@ -141,32 +152,57 @@ public class ItemsEditor : EditorWindow
         _isSettingsOpened = EditorGUILayout.Foldout(_isSettingsOpened, new GUIContent("Settings"));
         if (_isSettingsOpened)
         {
-            _itemDatabasePath = EditorGUILayout.TextField("Database path");
-
-            if (GUILayout.Button("Load"))
+            EditorGUI.BeginChangeCheck();
+            EditorGUILayout.PropertyField(_database, false);
+            if(EditorGUI.EndChangeCheck())
             {
-                Debug.Log("Item database is loaded");
+
             }
+
         }
 
         GUILayout.EndVertical();
-
-
-        //EditorGUILayout.PropertyField(Prop.FindPropertyRelative("Size"));
-        _editorObject.ApplyModifiedProperties();
     }
 
-    private void UpdateProperties()
+    private void UpdateItemProperties()
     {
-        _childProperties.Clear();
         _editorObject = new SerializedObject(this);
         _itemProperty = _editorObject.FindProperty("InventoryItem");
 
-        bool children = true;
-        while (_itemProperty.NextVisible(children))
+        //bool children = true;
+        //while (_itemProperty.NextVisible(children))
+        //{
+        //    _childProperties.Add(_itemProperty.Copy());
+        //    children = !_itemProperty.isArray;
+        //}
+    }
+
+    private void LoadSettings()
+    {
+        using (var file = new FileStream(_settingsPath, FileMode.OpenOrCreate, FileAccess.ReadWrite))
+        using (var streamReader = new StreamReader(file))
         {
-            _childProperties.Add(_itemProperty.Copy());
-            children = !_itemProperty.isArray;
+            _settings = JsonConvert.DeserializeObject<EditorSettings>(streamReader.ReadToEnd()) ?? new EditorSettings();
+
+            if (string.IsNullOrEmpty(_settings.ItemsDatabasePath))
+            {
+                _settings.ItemsDatabasePath = EditorSettings.DefaultItemsDatabasePath;
+                file.SetLength(0);
+                var streamWriter = new StreamWriter(file);
+                streamWriter.Write(JsonConvert.SerializeObject(_settings));
+                streamWriter.Flush();
+            }
         }
+        ItemsDatabase = AssetDatabase.LoadAssetAtPath(_settings.ItemsDatabasePath, typeof(ItemsDatabase)) as ItemsDatabase;
+        if (ItemsDatabase == null)
+            Debug.LogWarning("Items database is not found! Please add reference to it in settings.");
+    }
+
+    class EditorSettings
+    {
+        [JsonIgnore]
+        public const string DefaultItemsDatabasePath = "Assets/ScriptableObjects/ItemsDatabase";
+
+        public string ItemsDatabasePath { get; set; }
     }
 }

@@ -11,7 +11,7 @@ public class SwapTarget : MonoBehaviour
     [SerializeField]
     private float _outlineToOriginalScale = 1.1f;
 
-    private SpriteRenderer _spriteRenderer;
+    private SpriteRenderer _spriteRenderer = null;
     private GameObject _outlineObject;
 
     // Distance from the object position to the ground (when gounded)
