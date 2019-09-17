@@ -1,12 +1,16 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 
 //[CreateAssetMenu(fileName = "Inverntory item", menuName = "Inventory item")]
 [Serializable]
 public class InventoryItemObject
 {
+    [SerializeField, HideInInspector]
+    private int _itemID;
+    public int ItemID { get => _itemID; private set => _itemID = value; }
     public int Id => Name.GetHashCode();
     public Sprite Image;
     public string Name;
@@ -16,17 +20,28 @@ public class InventoryItemObject
     public MonoBehaviour Effect;
     public List<StatModifier> StatModifiers;
 
-    public InventoryItemObject Copy()
+    public InventoryItemObject()
+    {
+        StatModifiers = new List<StatModifier>();
+    }
+
+    public InventoryItemObject Copy(int itemID)
     {
         var copy = (InventoryItemObject)this.MemberwiseClone();
-        copy.StatModifiers = new List<StatModifier>();
+        copy.StatModifiers = StatModifiers.ToList();
+        copy.ItemID = itemID;
         return copy;
+    }
+
+    public InventoryItemObject Copy()
+    {
+        return Copy(ItemID);
     }
 }
 
 
 [Serializable]
-public class StatModifier
+public struct StatModifier
 {
     public Stat Stat;
     public float Modifier;

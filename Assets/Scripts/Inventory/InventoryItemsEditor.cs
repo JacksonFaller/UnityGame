@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Collections;
 using UnityEditor;
 using UnityEngine;
 using System.Linq;
@@ -23,7 +22,7 @@ public class ItemsEditor : EditorWindow
     private Dictionary<int, InventoryItemObject> _itemsDatabase;
 
     private string _itemName = string.Empty;
-    private string[] _searchResults;
+    private string[] _searchResultsNames;
     private int _selectedIndex;
     private bool _isEdit;
     private bool _isSettingsOpened;
@@ -41,7 +40,7 @@ public class ItemsEditor : EditorWindow
         _itemsDatabase = new Dictionary<int, InventoryItemObject>();
         var testObj = new InventoryItemObject() { Name = "Test Shield" };
         _itemsDatabase.Add(testObj.Id, testObj);
-        _searchResults = Array.Empty<string>();
+        _searchResultsNames = Array.Empty<string>();
 
         LoadSettings();
         UpdateItemProperties();
@@ -66,7 +65,7 @@ public class ItemsEditor : EditorWindow
         _itemName = EditorGUILayout.TextField(_itemName);
         if (GUILayout.Button("Find"))
         {
-            _searchResults = _itemsDatabase.Values.Select(x => x.Name)
+            _searchResultsNames = _itemsDatabase.Values.Select(x => x.Name)
                 .Where(x => x.IndexOf(_itemName, StringComparison.OrdinalIgnoreCase) != -1)
                 .ToArray();
         }
@@ -74,14 +73,14 @@ public class ItemsEditor : EditorWindow
         GUILayout.EndHorizontal();
 
         GUILayout.BeginHorizontal();
-        _selectedIndex = EditorGUILayout.Popup(_selectedIndex, _searchResults);
+        _selectedIndex = EditorGUILayout.Popup(_selectedIndex, _searchResultsNames);
         EditorGUI.BeginChangeCheck();
 
-        if (GUILayout.Button("Edit") && _searchResults.Length > 0)
+        if (GUILayout.Button("Edit") && _searchResultsNames.Length > 0)
         {
             _isEdit = true;
-            int key = _searchResults[_selectedIndex].GetHashCode();
-            InventoryItem = _itemsDatabase[key].Copy();
+            int key = _searchResultsNames[_selectedIndex].GetHashCode();
+            //InventoryItem = _itemsDatabase[key].Copy();
             UpdateItemProperties();
             //InventoryItem = _searchResults[_selectedIndex];
         }
@@ -130,7 +129,7 @@ public class ItemsEditor : EditorWindow
                 if (!_itemsDatabase.ContainsKey(InventoryItem.Id))
                 {
                     _itemsDatabase.Add(InventoryItem.Id, InventoryItem);
-                    InventoryItem = InventoryItem.Copy();
+                    //InventoryItem = InventoryItem.Copy();
                     UpdateItemProperties();
                 }
                 else
