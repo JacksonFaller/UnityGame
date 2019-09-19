@@ -39,7 +39,7 @@ public class ItemsEditor : EditorWindow
         InventoryItem = new InventoryItemObject() { Name = "Test" };
         _itemsDatabase = new Dictionary<int, InventoryItemObject>();
         var testObj = new InventoryItemObject() { Name = "Test Shield" };
-        _itemsDatabase.Add(testObj.Id, testObj);
+        _itemsDatabase.Add(testObj.ItemID, testObj);
         _searchResultsNames = Array.Empty<string>();
 
         LoadSettings();
@@ -110,7 +110,7 @@ public class ItemsEditor : EditorWindow
 
             if (GUILayout.Button("Save"))
             {
-                _itemsDatabase[InventoryItem.Id] = InventoryItem;
+                _itemsDatabase[InventoryItem.ItemID] = InventoryItem;
                 _isEdit = false;
             }
 
@@ -126,9 +126,9 @@ public class ItemsEditor : EditorWindow
 
             if (GUILayout.Button("Create"))
             {
-                if (!_itemsDatabase.ContainsKey(InventoryItem.Id))
+                if (!_itemsDatabase.ContainsKey(InventoryItem.ItemID))
                 {
-                    _itemsDatabase.Add(InventoryItem.Id, InventoryItem);
+                    _itemsDatabase.Add(InventoryItem.ItemID, InventoryItem);
                     //InventoryItem = InventoryItem.Copy();
                     UpdateItemProperties();
                 }

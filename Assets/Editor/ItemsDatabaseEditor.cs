@@ -60,24 +60,13 @@ class ItemsDatabaseEditor : Editor
         EditorGUILayout.PropertyField(serializedObject.FindProperty("ItemPrefab"), new GUIContent("Item prefab"));
         GUILayout.Space(3);
 
-        if(GUILayout.Button("Instantiate"))
-        {
-            if (_itemsDatabase.ItemPrefab == null)
-            {
-                Debug.LogError("Item prefab is not referenced!");
-            }
-            else
-            {
-                var item =  Instantiate(_itemsDatabase.ItemPrefab);
-                var inventoryItem = item.GetComponent<InventoryItem>();
-                inventoryItem.SetItem(_searchResults[_selectedIndex].Key);
-            }
-        }
+        InstantiateItem();
+        RefreshSceneItems();
 
-        if(GUILayout.Button("Clear"))
-        {
-            _itemsDatabase.Clear();
-        }
+        /* if(GUILayout.Button("Clear"))
+         {
+             _itemsDatabase.Clear();
+         }*/
 
         serializedObject.ApplyModifiedProperties();
     }
@@ -109,13 +98,13 @@ class ItemsDatabaseEditor : Editor
         {
             _isEdit = true;
             _editingItem = _searchResults[_selectedIndex];
-            _itemsDatabase.InventoryItem = _itemsDatabase[_editingItem.Key].Copy();
+            _itemsDatabase.InventoryItem = _itemsDatabase[_editingItem.Key];
         }
 
         if (GUILayout.Button("Copy"))
         {
             int key = _searchResults[_selectedIndex].Key;
-            _itemsDatabase.InventoryItem = _itemsDatabase[key].Copy(_itemsDatabase.NextItemID);
+            _itemsDatabase.InventoryItem = _itemsDatabase.GetItemCopy(key, true);
         }
 
         if (GUILayout.Button("Delete") && _searchResults.Count > 0)
@@ -178,6 +167,7 @@ class ItemsDatabaseEditor : Editor
         }
 
         GUILayout.EndVertical();
+        EditorGUI.indentLevel--;
     }
 
     private void UpdateSearchResults()
@@ -188,5 +178,44 @@ class ItemsDatabaseEditor : Editor
               .ToList();
 
         _searchResultsNames = _searchResults.Select(x => x.Value).ToArray();
+    }
+
+    private void InstantiateItem()
+    {
+        if (GUILayout.Button("Instantiate"))
+        {
+            if (_searchResults.Count == 0)
+            {
+                Debug.LogWarning("No item selected. Please select an item to instantiate.");
+                return;
+            }
+
+            if (_itemsDatabase.ItemPrefab == null)
+            {
+                Debug.LogWarning("Item prefab is not referenced!");
+                return;
+            }
+
+            var item = Instantiate(_itemsDatabase.ItemPrefab);
+            var inventoryItem = item.GetComponent<InventoryItem>();
+            int itemID = _searchResults[_selectedIndex].Key;
+            inventoryItem.SetItem(_itemsDatabase[itemID]);
+        }
+    }
+
+    private void RefreshSceneItems()
+    {
+        if (GUILayout.Button("Refresh scene items"))
+        {
+            var items = FindObjectsOfType<InventoryItem>();
+            foreach (var item in items.Where(x => x.ItemId.HasValue))
+            {
+                if (_itemsDatabase.TryGetValue(item.ItemId.Value, out InventoryItemObject inventoryItem))
+                {
+                    item.SetItem(inventoryItem.Copy());
+                }
+            }
+
+        }
     }
 }

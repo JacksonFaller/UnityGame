@@ -8,7 +8,7 @@ using UnityEngine;
 [Serializable]
 public class InventoryItemObject
 {
-    [SerializeField, HideInInspector]
+    [SerializeField, ReadOnly]
     private int _itemID;
     public int ItemID { get => _itemID; private set => _itemID = value; }
     public int Id => Name.GetHashCode();

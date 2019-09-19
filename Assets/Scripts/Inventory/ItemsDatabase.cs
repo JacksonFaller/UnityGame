@@ -54,23 +54,46 @@ public class ItemsDatabase : ScriptableObject, IDictionary<int, InventoryItemObj
 
     #region Dictionary 
 
+    /// <summary>
+    /// Returns a copy of an item
+    /// </summary>
+    /// <param name="key">Item ID</param>
+    /// <returns>Item</returns>
     public InventoryItemObject this[int key]
     {
-        get => Items[key];
+        get => Items[key].Copy();
         set
         {
+            if (value == null)
+                throw new ArgumentNullException(nameof(value));
+
             if (key != value.ItemID)
                 throw new ArgumentException("ItemID should be the same as the key in items database", nameof(value));
 
-            if (ContainsKey(key)) Items[key] = value;
+            if (ContainsKey(key))
+            {
+                if (Items[key].Name != value.Name && _itemsNames.Contains(value.Name))
+                    throw new ArgumentException($"Items database already contains item with name: {value.Name}");
+                Items[key] = value;
+            }
             else Add(key, value);
             _isCached = false;
         }
     }
 
+    public InventoryItemObject GetItemCopy(int key, bool useNextItemID = false)
+    {
+        if(!useNextItemID)
+            return Items[key].Copy(NextItemID);
+
+        return Items[key].Copy();
+    }
 
     public bool TryAdd(int key, InventoryItemObject value)
     {
+        if (value == null)
+            throw new ArgumentNullException(nameof(value));
+
         if (value.ItemID != NextItemID)
             return AddCopy(key, value);
 
@@ -99,12 +122,15 @@ public class ItemsDatabase : ScriptableObject, IDictionary<int, InventoryItemObj
     /// <summary>
     /// Add a copy of an item to the database
     /// </summary>
-    /// <param name="key"></param>
-    /// <param name="value"></param>
+    /// <param name="key">Item's copy ID</param>
+    /// <param name="value">Reference item</param>
     public bool AddCopy(int key, InventoryItemObject value)
     {
+        if (value == null)
+            throw new ArgumentNullException(nameof(value));
+
         if (ItemsNames.Contains(value.Name))
-            return false;
+            throw new ArgumentException($"Items database already contains item with name: {value.Name}");
 
         ItemsNames.Add(value.Name);
         Items.Add(key, value.Copy(NextItemID));
@@ -123,7 +149,18 @@ public class ItemsDatabase : ScriptableObject, IDictionary<int, InventoryItemObj
 
     public bool ContainsKey(int key) => Items.ContainsKey(key);
 
-    public bool TryGetValue(int key, out InventoryItemObject value) => Items.TryGetValue(key, out value);
+    /// <summary>
+    /// Returns a copy of an item if exists
+    /// </summary>
+    /// <param name="key">Item ID</param>
+    /// <param name="value">Item if found, otherwise default value</param>
+    /// <returns>True if item with the key exists, otherwise false</returns>
+    public bool TryGetValue(int key, out InventoryItemObject value)
+    {
+        bool result = Items.TryGetValue(key, out value);
+        if (result) value = value.Copy();
+        return result;
+    }
 
     public void Add(KeyValuePair<int, InventoryItemObject> item) => Add(item.Key, item.Value);
 

@@ -37,7 +37,6 @@ public class Inventory : MonoBehaviour
         var filter = new ContactFilter2D() { layerMask = _mask, useLayerMask = true };
         if(Physics2D.OverlapCircle(transform.position, _pickupRadius, filter, colliders) > 0)
         {
-            Debug.Log(colliders.Count);
             Transform closestItem = null;
             float minDistance = Mathf.Infinity;
             foreach(var collider in colliders)

@@ -13,20 +13,26 @@ MonoBehaviour:
   m_Name: ItemsDatabase
   m_EditorClassIdentifier: 
   InventoryItem:
-    _itemID: 1
-    Image: {fileID: 21300000, guid: eec19781926cd2248b7c9abfde8db555, type: 3}
-    Name: Test
+    _itemID: 2
+    Image: {fileID: 0}
+    Name: Test1234
     Description: 
     SellValue: 0
     StackSize: 1
     Effect: {fileID: 0}
-    StatModifiers: []
+    StatModifiers:
+    - Stat: 1
+      Modifier: 1
+      IsMultiplier: 0
+    - Stat: 0
+      Modifier: 50
+      IsMultiplier: 0
   ItemPrefab: {fileID: 1609589417638780222, guid: 01871aaf25d65d040b674d5f61e618fc,
     type: 3}
   _inventoryItems:
   - _itemID: 1
     Image: {fileID: 21300000, guid: eec19781926cd2248b7c9abfde8db555, type: 3}
-    Name: Test
+    Name: Testasd
     Description: 
     SellValue: 0
     StackSize: 1
@@ -34,9 +40,29 @@ MonoBehaviour:
     StatModifiers: []
   - _itemID: 2
     Image: {fileID: 0}
-    Name: Test123
+    Name: Test1234
     Description: 
     SellValue: 0
     StackSize: 1
     Effect: {fileID: 0}
-    StatModifiers: []
+    StatModifiers:
+    - Stat: 1
+      Modifier: 1
+      IsMultiplier: 0
+    - Stat: 0
+      Modifier: 50
+      IsMultiplier: 0
+  - _itemID: 0
+    Image: {fileID: 0}
+    Name: Test78
+    Description: 
+    SellValue: 0
+    StackSize: 1
+    Effect: {fileID: 0}
+    StatModifiers:
+    - Stat: 2
+      Modifier: 20
+      IsMultiplier: 0
+    - Stat: 3
+      Modifier: 50
+      IsMultiplier: 1

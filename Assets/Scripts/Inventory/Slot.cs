@@ -1,37 +1,57 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
+using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
-[RequireComponent(typeof(SpriteRenderer))]
-public class InventoryItem : MonoBehaviour
+[RequireComponent(typeof(RectTransform))]
+public class Slot : MonoBehaviour
 {
     [SerializeField]
     private InventoryItemObject _inventoryItem;
 
     [SerializeField]
+    private uint _itemAmount = 1;
+
+    [SerializeField]
+    private bool _hasItem = false;
+
+    [Space]
+    [SerializeField]
     private ItemsDatabase _itemsDatabase = null;
 
-    private SpriteRenderer _spriteRenderer;
-    private bool _isInitialized = false;
+    [SerializeField]
+    private Image _itemImage = null;
 
-    public int? ItemId => _inventoryItem?.ItemID;
-
-    public InventoryItemObject InventoryItemObject => _inventoryItem;
+    [SerializeField]
+    private TextMeshProUGUI _amountText = null;
 
     void Start()
     {
+        if (!_hasItem)
+        {
+            _itemImage.enabled = false;
+            _amountText.enabled = false;
+            return;
+        }
+
         if (!_itemsDatabase.TryGetValue(_inventoryItem.ItemID, out _inventoryItem))
         {
             Debug.LogError($"Item with ID {_inventoryItem.ItemID} is not found in items database!");
         }
         else
         {
-            _spriteRenderer = GetComponent<SpriteRenderer>();
-            _spriteRenderer.sprite = _inventoryItem.Image;
+            _itemImage.sprite = _inventoryItem.Image;
+            if(_inventoryItem.StackSize == 1)
+            {
+                _amountText.enabled = false;
+            }
+            else
+            {
+                _amountText.enabled = true;
+                _amountText.text = _itemAmount.ToString();
+            }
         }
-
-        _isInitialized = true;
     }
 
     void Update()
@@ -41,8 +61,12 @@ public class InventoryItem : MonoBehaviour
 
     public void SetItem(InventoryItemObject item)
     {
-        if(!_isInitialized)
-            _inventoryItem = item;
+        _inventoryItem = item;
+    }
+
+    public void UpdateTextSize(Vector2 size)
+    {
+        _amountText.rectTransform.sizeDelta = size;
     }
 
     [ContextMenu("Update item in database")]
@@ -59,6 +83,5 @@ public class InventoryItem : MonoBehaviour
             return;
         }
         _itemsDatabase[_inventoryItem.ItemID] = _inventoryItem;
-       
     }
 }
