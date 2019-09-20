@@ -26,6 +26,8 @@ public class Slot : MonoBehaviour
     [SerializeField]
     private TextMeshProUGUI _amountText = null;
 
+    public uint ItemsAmount => _itemAmount;
+
     void Start()
     {
         if (!_hasItem)
@@ -42,7 +44,7 @@ public class Slot : MonoBehaviour
         else
         {
             _itemImage.sprite = _inventoryItem.Image;
-            if(_inventoryItem.StackSize == 1)
+            if (_inventoryItem.StackSize == 1)
             {
                 _amountText.enabled = false;
             }
@@ -56,12 +58,40 @@ public class Slot : MonoBehaviour
 
     void Update()
     {
-        
+
     }
 
     public void SetItem(InventoryItemObject item)
     {
         _inventoryItem = item;
+        _itemImage.sprite = _inventoryItem.Image;
+        _itemImage.enabled = true;
+        if(_inventoryItem.StackSize > 1)
+        {
+            _amountText.enabled = true;
+            _amountText.text = "1";
+        }
+    }
+
+    public void AddItem(InventoryItemObject item)
+    {
+        if (_itemAmount == item.StackSize)
+        {
+            Debug.LogError("Can't add item to this slot. It has reached it's max capacity");
+        }
+        else
+        {
+            if (_inventoryItem.ItemID != item.ItemID)
+            {
+                Debug.LogError($"Can't add item with ID {item.ItemID} to this slot. It already contains item with different ID: {_inventoryItem.ItemID}");
+            }
+            else
+            {
+                _itemAmount++;
+                _amountText.text = _itemAmount.ToString();
+            }
+        }
+
     }
 
     public void UpdateTextSize(Vector2 size)
@@ -72,7 +102,7 @@ public class Slot : MonoBehaviour
     [ContextMenu("Update item in database")]
     private void UpdateItemInDatabase()
     {
-        if(!_itemsDatabase.TryGetValue(_inventoryItem.ItemID, out InventoryItemObject item))
+        if (!_itemsDatabase.TryGetValue(_inventoryItem.ItemID, out InventoryItemObject item))
         {
             Debug.Log($"Item with ID {_inventoryItem.ItemID} is not found in items database");
             return;

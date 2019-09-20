@@ -23,6 +23,7 @@ public static class Configuration
         public const string CancelButton= "Cancel";
         public const string ActionButton = "Action";
         public const string Interact = "Interact";
+        public const string Inventory = "Inventory";
     }
 
     public static class AnimatorParameters

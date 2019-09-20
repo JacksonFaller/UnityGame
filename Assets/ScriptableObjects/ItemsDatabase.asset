@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   InventoryItem:
     _itemID: 2
-    Image: {fileID: 0}
+    Image: {fileID: 21300000, guid: eec19781926cd2248b7c9abfde8db555, type: 3}
     Name: Test1234
     Description: 
     SellValue: 0
@@ -39,7 +39,7 @@ MonoBehaviour:
     Effect: {fileID: 0}
     StatModifiers: []
   - _itemID: 2
-    Image: {fileID: 0}
+    Image: {fileID: 21300000, guid: eec19781926cd2248b7c9abfde8db555, type: 3}
     Name: Test1234
     Description: 
     SellValue: 0

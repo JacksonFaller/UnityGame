@@ -15,7 +15,8 @@ public class Movement : MonoBehaviour
     private bool _isGrounded;
     private bool _hasDashed;
     private int _side = 1;
-    
+    private RunState _runState = RunState.Deceleration;
+
 
     public bool CanMove { get; private set; } = true;
     public bool IsWallGrabbing { get; private set; }
@@ -27,13 +28,18 @@ public class Movement : MonoBehaviour
 
     [Space]
     [Header("Stats")]
-    public float Speed = 10;
+    public float RunSpeed = 20f;
+    public float AccelerationSpeed = 5f;
+    public float DecelerationnSpeed = 10f;
+
     public float JumpForce = 50;
     public float SlideSpeed = 5;
     public float WallJumpLerp = 10;
     public float DashSpeed = 20;
     public float WallJumpPowerMultiplier = 0.6f;
     public float WallClimbSpeedMultiplier = 0.5f;
+    public float FlySpeed = 10f;
+    public float FallSpeed = 0.25f;
 
     [Space]
     [Header("Particles")]
@@ -54,7 +60,12 @@ public class Movement : MonoBehaviour
     private Collision _collision = null;
 
 
+
     #endregion
+
+    private Action _onHorizontalAxis;
+    private bool _horizontalAxisState;
+
 
     // Start is called before the first frame update
     void Start()
@@ -98,7 +109,6 @@ public class Movement : MonoBehaviour
         }
     }
 
-   
 
     #region Dash
 
@@ -184,10 +194,63 @@ public class Movement : MonoBehaviour
         if (!CanMove || IsWallGrabbing) return;
 
         if (IsWallJumped)
-            _rigidbody.velocity = Vector2.Lerp(_rigidbody.velocity, 
-                new Vector2(x * Speed, _rigidbody.velocity.y), WallJumpLerp * Time.deltaTime);
-        else
-            _rigidbody.velocity = new Vector2(x * Speed, _rigidbody.velocity.y);
+        {
+            _rigidbody.velocity = Vector2.Lerp(_rigidbody.velocity,
+               new Vector2(x * RunSpeed / 2, _rigidbody.velocity.y), WallJumpLerp * Time.deltaTime);
+        }
+        else if (_collision.OnGround)
+        {
+            float horizontalAxisRaw = Input.GetAxisRaw(Configuration.Input.HorizontalAxis);
+            switch (_runState)
+            {
+                case RunState.Run:
+                {
+                    // TODO: Need to thing about gamepad controls where input value can be less than 1 (0 -> 1, -1 -> 0)
+                    if (horizontalAxisRaw == 0 || (horizontalAxisRaw < 0 && _rigidbody.velocity.x > 0) || (horizontalAxisRaw > 0 && _rigidbody.velocity.x < 0))
+                    {
+                        _runState = RunState.Deceleration;
+                    }
+                    else
+                    {
+                        _rigidbody.velocity = new Vector2(RunSpeed * x, _rigidbody.velocity.y);
+                    }
+                    break;
+                }
+                case RunState.Acceleration:
+                {
+                    if (horizontalAxisRaw == 0 || (x < 0 && _rigidbody.velocity.x > 0) || (x > 0 && _rigidbody.velocity.x < 0))
+                    {
+                        _runState = RunState.Deceleration;
+                    }
+                    else
+                    {
+                        if (Mathf.Abs(_rigidbody.velocity.x) == RunSpeed)
+                        {
+                            _runState = RunState.Run;
+                        }
+                        else
+                        {
+                            _rigidbody.velocity = Vector2.Lerp(_rigidbody.velocity,
+                                new Vector2(RunSpeed * x, _rigidbody.velocity.y), Time.deltaTime * AccelerationSpeed);
+                        }
+                    }
+                    break;
+                }
+                case RunState.Deceleration:
+                {
+                    if ((horizontalAxisRaw > 0 && _rigidbody.velocity.x >= 0) || (horizontalAxisRaw < 0 && _rigidbody.velocity.x <= 0))
+                    {
+                        _runState = RunState.Acceleration;
+                    }
+                    else
+                    {
+                        _rigidbody.velocity = Vector2.Lerp(_rigidbody.velocity,
+                            new Vector2(0, _rigidbody.velocity.y), Time.deltaTime * DecelerationnSpeed);
+                    }
+                    break;
+                }
+            }
+        }
     }
 
     private void Jump(Vector2 dir, bool wall)
@@ -203,22 +266,20 @@ public class Movement : MonoBehaviour
 
     private void Fly(float x)
     {
-        if(Input.GetButton(Configuration.Input.FlyButton))
+        if (Input.GetButton(Configuration.Input.FlyButton))
         {
             if (_collision.OnWall || _isGrounded) return;
 
             _rigidbody.gravityScale = 0f;
-            float fallSpeed = -0.25f;
-            float flySpeedBase = Speed;
-            float flySpeed = _side == 1 ? flySpeedBase : -flySpeedBase;
+            float flySpeed = _side == 1 ? FlySpeed : -FlySpeed;
             if (x != 0 && CanMove)
             {
-                flySpeed = x > 0 ? flySpeedBase : -flySpeedBase;
+                flySpeed = x > 0 ? FlySpeed : -FlySpeed;
                 if ((x < 0 && _side == 1) || (x > 0 && _side == -1))
                     StartCoroutine(DisableAirMovement(0.4f));
             }
 
-            _rigidbody.velocity = new Vector2(flySpeed, fallSpeed);
+            _rigidbody.velocity = new Vector2(flySpeed, -FallSpeed);
         }
         else if (Input.GetButtonUp(Configuration.Input.FlyButton))
         {
@@ -228,7 +289,7 @@ public class Movement : MonoBehaviour
 
     #region Corroutines
 
-    
+
 
     private IEnumerator DisableMovement(float time)
     {
@@ -323,7 +384,7 @@ public class Movement : MonoBehaviour
         {
             _rigidbody.gravityScale = 0;
             float speedModifier = y > 0 ? WallClimbSpeedMultiplier : 1;
-            _rigidbody.velocity = new Vector2(_rigidbody.velocity.x, y * (Speed * speedModifier));
+            _rigidbody.velocity = new Vector2(_rigidbody.velocity.x, y * (RunSpeed * speedModifier));
         }
         else
         {
@@ -346,4 +407,12 @@ public class Movement : MonoBehaviour
             IsWallSliding = false;
         }
     }
+}
+
+
+public enum RunState
+{
+    Acceleration,
+    Deceleration,
+    Run
 }

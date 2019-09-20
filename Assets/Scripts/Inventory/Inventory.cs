@@ -1,5 +1,6 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 
 public class Inventory : MonoBehaviour
@@ -10,84 +11,100 @@ public class Inventory : MonoBehaviour
     [SerializeField]
     private LayerMask _mask = new LayerMask();
 
-    public MonoBehaviour Script;
+    [SerializeField]
+    private Transform _slotsContainer;
 
-    private HashSet<InventoryItemObject> _items;
+    [SerializeField]
+    private GameObject _inventory;
 
-    private List<ItemStack> _itemStacks;
+
+    // all slots objects
+    List<Slot> _slots;
+
+    // Empty slots indexes sorted to make search of first empty slot easier
+    SortedSet<int> _emptySlots;
+
+    // Dictionary with ItemID as a key and slot index as a value, to find slots with stackable items
+    Dictionary<int, int> _itemsSlots;
+
+    // Items that player picked up. Storing them so player cat drop them later
+    Dictionary<int, Transform> _inventoryitems;
+
 
     void Start()
     {
-        _items = new HashSet<InventoryItemObject>();
-        _itemStacks = new List<ItemStack>();
+        _inventoryitems = new Dictionary<int, Transform>();
+        _itemsSlots = new Dictionary<int, int>();
+        _slots = new List<Slot>();
+        _emptySlots = new SortedSet<int>();
+
+        for (int i = 0; i < _slotsContainer.childCount; i++)
+        {
+            _slots.Add(_slotsContainer.GetChild(i).GetComponent<Slot>());
+            _emptySlots.Add(i);
+        }
     }
 
     void Update()
     {
-        if(Input.GetButtonDown(Configuration.Input.Interact))
+        if (Input.GetButtonDown(Configuration.Input.Interact))
         {
             PickUpItem();
         }
-        
+        else if (Input.GetButtonDown(Configuration.Input.Inventory))
+        {
+            _inventory.SetActive(!_inventory.activeSelf);
+        }
     }
+
 
     private void PickUpItem()
     {
-        List<Collider2D> colliders = new List<Collider2D>();
-        var filter = new ContactFilter2D() { layerMask = _mask, useLayerMask = true };
-        if(Physics2D.OverlapCircle(transform.position, _pickupRadius, filter, colliders) > 0)
+        Collider2D[] colliders = Physics2D.OverlapCircleAll(transform.position, _pickupRadius, _mask);
+        if (colliders.Length > 0)
         {
             Transform closestItem = null;
             float minDistance = Mathf.Infinity;
-            foreach(var collider in colliders)
+            foreach (var collider in colliders)
             {
                 float distance = (collider.transform.position - transform.position).sqrMagnitude;
-                if(distance < minDistance)
+                if (distance < minDistance)
                 {
                     minDistance = distance;
                     closestItem = collider.transform;
                 }
             }
             var inventoryItem = closestItem.GetComponent<InventoryItem>();
-            _items.Add(inventoryItem.InventoryItemObject);
+            AddItemToInventorySlot(inventoryItem.InventoryItemObject);
             closestItem.SetParent(transform);
             closestItem.localPosition = Vector3.zero;
             closestItem.gameObject.SetActive(false);
+            _inventoryitems.Add(inventoryItem.InventoryItemObject.ItemID, closestItem);
         }
     }
 
-}
-
-public class ItemStack
-{
-    public int Count { get; private set; }
-
-    public int StackSize => ItemObject.StackSize;
-
-    public InventoryItemObject ItemObject { get; }
-
-    public ItemStack(InventoryItemObject itemObject)
+    private void AddItemToInventorySlot(InventoryItemObject item)
     {
-        ItemObject = itemObject;
-    }
-
-    public int Add(int count = 1)
-    {
-        Count += count;
-        if(Count > ItemObject.StackSize)
+        // Non stackable items
+        if (item.StackSize == 1)
         {
-            count = Count - ItemObject.StackSize;
-            Count = ItemObject.StackSize;
+            var slotIndex = _emptySlots.Min;
+            _slots[slotIndex].SetItem(item);
+            // Remove from the empty slots list
+            _emptySlots.Remove(slotIndex);
         }
-        return count;
-    }
+        else
+        {
+            if (_itemsSlots.ContainsKey(item.ItemID))
+            {
+                var slot = _slots[_itemsSlots[item.ItemID]];
+                // This is just adds +1 to the stack
+                slot.AddItem(item);
+                // Reached max stack size, remove slot from dictionary
+                if (slot.ItemsAmount == item.StackSize)
+                    _itemsSlots.Remove(item.ItemID);
 
-    public int Remove(int count = 1)
-    {
-        if (count > Count)
-            count = Count;
-
-        Count-= count;
-        return count;
+            }
+        }
     }
 }
