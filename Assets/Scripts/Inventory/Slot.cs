@@ -66,6 +66,7 @@ public class Slot : MonoBehaviour
         _inventoryItem = item;
         _itemImage.sprite = _inventoryItem.Image;
         _itemImage.enabled = true;
+        _hasItem = true;
         if(_inventoryItem.StackSize > 1)
         {
             _amountText.enabled = true;
@@ -91,7 +92,6 @@ public class Slot : MonoBehaviour
                 _amountText.text = _itemAmount.ToString();
             }
         }
-
     }
 
     public void UpdateTextSize(Vector2 size)

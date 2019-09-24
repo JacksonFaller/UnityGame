@@ -41,7 +41,6 @@ public class InventoryUI : MonoBehaviour
     void Start()
     {
         _slotsGrid = _slotsContainer.GetComponent<GridLayoutGroup>();
-        Repaint();
     }
 
 #if (UNITY_EDITOR)

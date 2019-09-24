@@ -145,7 +145,7 @@ public class SwapAbility : MonoBehaviour
             Transform targetTransform = collision.transform;
             if (_targets.ContainsKey(targetTransform))
             {
-                Destroy(_targets[targetTransform].gameObject);
+                _targets[targetTransform].RemoveMark();
                 _targets.Remove(targetTransform);
             }
             _availableTargets.Remove(targetTransform);

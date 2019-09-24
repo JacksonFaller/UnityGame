@@ -1,4 +1,5 @@
-﻿using System.Collections;
+﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -8,14 +9,14 @@ public class GrappleHook : MonoBehaviour
     [SerializeField]
     private Grapple _grapple = null;
 
+    public event Action<Collider2D> OnGrappleHitTarget;
+    public event Action OnGrappleHitWall;
 
     private void OnTriggerEnter2D(Collider2D collision)
     {
         if(collision.CompareTag(Configuration.Tags.GrapplePoint))
         {
-            GameObject grappleJoint = collision.transform.GetChild(0).gameObject;
-            grappleJoint.transform.rotation = Quaternion.identity;
-            _grapple.GrappleHitTraget(grappleJoint.GetComponent<Rigidbody2D>());
+            OnGrappleHitTarget?.Invoke(collision);
         }
     }
 
@@ -23,7 +24,7 @@ public class GrappleHook : MonoBehaviour
     {
         if (Configuration.GroundLayer.ContainsLayer(collision.gameObject.layer))
         {
-            _grapple.GrappleHitWall();
+            OnGrappleHitWall?.Invoke();
         }
     }
 }
