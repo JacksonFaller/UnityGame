@@ -25,10 +25,9 @@ public class AnimationScript : MonoBehaviour
         _animator.SetBool("onGround", _collision.OnGround);
         _animator.SetBool("onWall", _collision.OnWall);
         _animator.SetBool("onRightWall", _collision.OnRightWall);
-        _animator.SetBool("wallGrab", _movement.IsWallGrabbing);
-        _animator.SetBool("wallSlide", _movement.IsWallSliding);
-        _animator.SetBool("canMove", _movement.CanMove);
-        _animator.SetBool("isDashing", _movement.IsDashing);
+        _animator.SetBool("wallSlide", _movement.Context.IsWallSliding);
+        _animator.SetBool("canMove", _movement.Context.CanMove);
+        _animator.SetBool("isDashing", _movement.Context.IsDashing);
     }
 
     public void SetHorizontalMovement(float x,float y, float yVel)
@@ -46,14 +45,11 @@ public class AnimationScript : MonoBehaviour
     public void Flip(int side)
     {
 
-        if (_movement.IsWallGrabbing || _movement.IsWallSliding)
-        {
-            if ((side == -1 && _spriteRenderer.flipX) || (side == 1 && !_spriteRenderer.flipX))
-                return;
-        }
+        if (_movement.Context.IsWallSliding && 
+            ((side == -1 && _spriteRenderer.flipX) || (side == 1 && !_spriteRenderer.flipX)))
+            return;
 
-        bool state = side != 1;
-        _spriteRenderer.flipX = state;
+        _spriteRenderer.flipX = side != 1;
     }
 
     public int Side => _spriteRenderer.flipX ? -1 : 1;

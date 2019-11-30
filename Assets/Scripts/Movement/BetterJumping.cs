@@ -27,7 +27,7 @@ public class BetterJumping : MonoBehaviour
     {
         if (_isJumping)
         {
-            if (_collision.OnGround && _rigidbody2D.velocity.y == 0)
+            if (_collision.OnGround) //&& _rigidbody2D.velocity.y == 0
             {
                 _isJumping = false;
                 return;

@@ -35,6 +35,7 @@ public static class Configuration
 
     public static class Tags
     {
+        public const string Player = "Player";
         public const string JumpTrigger = "JumpTrigger";
         public const string SwapField = "SwapField";
         public const string SwapTarget = "SwapTarget";
